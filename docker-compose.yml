@@ -1,0 +1,65 @@
+# ---------------------------------------------------------------------
+# Hangeul Global Learning Center — production stack.
+#
+# Runs behind the Traefik instance already on this VPS (project
+# "traefik-wqiz"), which terminates TLS and issues the Let's Encrypt
+# certificate over the HTTP-01 challenge. Traefik discovers this service
+# through the Docker socket, so no ports are published on the host.
+#
+# NEXT_PUBLIC_* are needed at BUILD time (they are inlined into the client
+# bundle) and again at runtime; server-only secrets are runtime-only.
+# ---------------------------------------------------------------------
+
+services:
+  web:
+    build:
+      context: ${REPO_URL:-.}
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_BKASH_NUMBER: ${NEXT_PUBLIC_BKASH_NUMBER}
+        NEXT_PUBLIC_NAGAD_NUMBER: ${NEXT_PUBLIC_NAGAD_NUMBER}
+        NEXT_PUBLIC_BANK_DETAILS: ${NEXT_PUBLIC_BANK_DETAILS}
+        NEXT_PUBLIC_CONTACT_PHONE: ${NEXT_PUBLIC_CONTACT_PHONE}
+        NEXT_PUBLIC_CONTACT_EMAIL: ${NEXT_PUBLIC_CONTACT_EMAIL}
+    container_name: hglc-web
+    restart: unless-stopped
+
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      SSLCZ_STORE_ID: ${SSLCZ_STORE_ID}
+      SSLCZ_STORE_PASSWORD: ${SSLCZ_STORE_PASSWORD}
+      SSLCZ_SANDBOX: ${SSLCZ_SANDBOX}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      NEXT_PUBLIC_BKASH_NUMBER: ${NEXT_PUBLIC_BKASH_NUMBER}
+      NEXT_PUBLIC_NAGAD_NUMBER: ${NEXT_PUBLIC_NAGAD_NUMBER}
+      NEXT_PUBLIC_BANK_DETAILS: ${NEXT_PUBLIC_BANK_DETAILS}
+      NEXT_PUBLIC_CONTACT_PHONE: ${NEXT_PUBLIC_CONTACT_PHONE}
+      NEXT_PUBLIC_CONTACT_EMAIL: ${NEXT_PUBLIC_CONTACT_EMAIL}
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hglc.rule=Host(`hangeulglobal.com`) || Host(`www.hangeulglobal.com`)"
+      - "traefik.http.routers.hglc.entrypoints=websecure"
+      - "traefik.http.routers.hglc.tls=true"
+      - "traefik.http.routers.hglc.tls.certresolver=letsencrypt"
+      - "traefik.http.services.hglc.loadbalancer.server.port=3000"
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
