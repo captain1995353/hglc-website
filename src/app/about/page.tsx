@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getI18n } from "@/lib/i18n";
 import { site } from "@/lib/site";
+import { getSettings, setting } from "@/lib/settings";
 import { MapEmbed } from "@/components/MapEmbed";
 
 export const metadata: Metadata = {
@@ -12,6 +13,13 @@ export const metadata: Metadata = {
 
 export default async function AboutPage() {
   const { locale, t } = await getI18n();
+  const settings = await getSettings();
+
+  const phone = setting(settings, "contact_phone", locale, site.phone);
+  const email = setting(settings, "contact_email", locale, site.email);
+  const address = setting(settings, "address", locale, site.address[locale]);
+  const hours = setting(settings, "opening_hours", locale, site.hours[locale]);
+  const mapsUrl = setting(settings, "maps_url", locale, site.mapsUrl);
 
   return (
     <>
@@ -47,11 +55,11 @@ export default async function AboutPage() {
             <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-ink-400">
               {t.about.visitTitle}
             </h2>
-            <p className="mt-3 text-sm leading-relaxed text-ink-700">
-              {site.address[locale]}
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink-700">
+              {address}
             </p>
             <a
-              href={site.mapsUrl}
+              href={mapsUrl}
               target="_blank"
               rel="noreferrer noopener"
               className="btn btn-outline mt-4 w-full"
@@ -64,18 +72,18 @@ export default async function AboutPage() {
             <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-ink-400">
               {t.about.hoursTitle}
             </h2>
-            <p className="mt-3 text-sm leading-relaxed text-ink-700">
-              {site.hours[locale]}
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink-700">
+              {hours}
             </p>
             <dl className="mt-4 space-y-2 border-t border-ink-100 pt-4 text-sm">
               <div className="flex justify-between gap-4">
                 <dt className="text-ink-400">{t.contact.callUs}</dt>
                 <dd>
                   <a
-                    href={`tel:${site.phone.replace(/\s/g, "")}`}
+                    href={`tel:${phone.replace(/\s/g, "")}`}
                     className="font-medium text-brand-700 hover:underline"
                   >
-                    {site.phone}
+                    {phone}
                   </a>
                 </dd>
               </div>
@@ -83,10 +91,10 @@ export default async function AboutPage() {
                 <dt className="text-ink-400">{t.contact.emailUs}</dt>
                 <dd>
                   <a
-                    href={`mailto:${site.email}`}
+                    href={`mailto:${email}`}
                     className="font-medium text-brand-700 hover:underline"
                   >
-                    {site.email}
+                    {email}
                   </a>
                 </dd>
               </div>

@@ -5,6 +5,7 @@ import { getI18n, pick } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatMoney } from "@/lib/format";
 import { manualPaymentAccounts } from "@/lib/site";
+import { getSettings, setting } from "@/lib/settings";
 import { stripeEnabled } from "@/lib/payments/stripe";
 import { sslcommerzConfigured } from "@/lib/env";
 import {
@@ -79,6 +80,16 @@ export default async function CheckoutPage({
   const priceBdt = Number(course.price_bdt);
   const priceUsd = Number(course.price_usd);
   const sslConfigured = sslcommerzConfigured;
+
+  // Payment account numbers are managed from the dashboard; the env vars
+  // stay as a fallback for a fresh install.
+  const settings = await getSettings();
+  const accounts = {
+    bkash: setting(settings, "bkash_number", locale, manualPaymentAccounts.bkash),
+    nagad: setting(settings, "nagad_number", locale, manualPaymentAccounts.nagad),
+    bank: setting(settings, "bank_details", locale, manualPaymentAccounts.bank),
+  };
+  const paymentNote = setting(settings, "payment_note", locale, t.checkout.manualBody);
 
   return (
     <div className="container-page py-12 sm:py-16">
@@ -187,37 +198,39 @@ export default async function CheckoutPage({
                   <h3 className="text-base font-bold text-ink-900">
                     {t.checkout.manualTitle}
                   </h3>
-                  <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-ink-500">
-                    {t.checkout.manualBody}
+                  <p className="mt-1.5 max-w-lg whitespace-pre-line text-sm leading-relaxed text-ink-500">
+                    {paymentNote}
                   </p>
 
                   <dl className="mt-4 grid gap-2 rounded-lg bg-paper-dim p-4 text-sm sm:grid-cols-2">
-                    {manualPaymentAccounts.bkash && (
+                    {accounts.bkash && (
                       <div>
                         <dt className="text-xs uppercase tracking-wide text-ink-400">
                           {t.checkout.manualBkash}
                         </dt>
                         <dd className="font-mono font-semibold text-ink-900">
-                          {manualPaymentAccounts.bkash}
+                          {accounts.bkash}
                         </dd>
                       </div>
                     )}
-                    {manualPaymentAccounts.nagad && (
+                    {accounts.nagad && (
                       <div>
                         <dt className="text-xs uppercase tracking-wide text-ink-400">
                           {t.checkout.manualNagad}
                         </dt>
                         <dd className="font-mono font-semibold text-ink-900">
-                          {manualPaymentAccounts.nagad}
+                          {accounts.nagad}
                         </dd>
                       </div>
                     )}
-                    {manualPaymentAccounts.bank && (
+                    {accounts.bank && (
                       <div className="sm:col-span-2">
                         <dt className="text-xs uppercase tracking-wide text-ink-400">
                           {t.checkout.manualBank}
                         </dt>
-                        <dd className="text-ink-800">{manualPaymentAccounts.bank}</dd>
+                        <dd className="whitespace-pre-line text-ink-800">
+                          {accounts.bank}
+                        </dd>
                       </div>
                     )}
                   </dl>

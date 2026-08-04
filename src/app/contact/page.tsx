@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getI18n } from "@/lib/i18n";
 import { site } from "@/lib/site";
+import { getSettings, setting } from "@/lib/settings";
 import { MapEmbed } from "@/components/MapEmbed";
 import { sendContactMessage } from "@/app/actions/contact";
 
@@ -17,6 +18,14 @@ export default async function ContactPage({
 }) {
   const { locale, t } = await getI18n();
   const { sent, error } = await searchParams;
+  const settings = await getSettings();
+
+  const phone = setting(settings, "contact_phone", locale, site.phone);
+  const email = setting(settings, "contact_email", locale, site.email);
+  const address = setting(settings, "address", locale, site.address[locale]);
+  const hours = setting(settings, "opening_hours", locale, site.hours[locale]);
+  const mapsUrl = setting(settings, "maps_url", locale, site.mapsUrl);
+  const whatsapp = setting(settings, "contact_whatsapp", locale, "");
 
   return (
     <>
@@ -113,9 +122,9 @@ export default async function ContactPage({
             <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-ink-400">
               {t.contact.findUs}
             </h2>
-            <p className="mt-3 text-sm text-ink-700">{site.address[locale]}</p>
+            <p className="mt-3 whitespace-pre-line text-sm text-ink-700">{address}</p>
             <a
-              href={site.mapsUrl}
+              href={mapsUrl}
               target="_blank"
               rel="noreferrer noopener"
               className="mt-2 inline-block text-sm font-semibold text-brand-700 hover:underline"
@@ -129,25 +138,35 @@ export default async function ContactPage({
               {t.contact.callUs}
             </h2>
             <a
-              href={`tel:${site.phone.replace(/\s/g, "")}`}
+              href={`tel:${phone.replace(/\s/g, "")}`}
               className="mt-2 block text-lg font-bold text-ink-900 hover:text-brand-700"
             >
-              {site.phone}
+              {phone}
             </a>
             <a
-              href={`mailto:${site.email}`}
+              href={`mailto:${email}`}
               className="mt-1 block text-sm text-brand-700 hover:underline"
             >
-              {site.email}
+              {email}
             </a>
+            {whatsapp && (
+              <a
+                href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="mt-1 block text-sm text-brand-700 hover:underline"
+              >
+                WhatsApp
+              </a>
+            )}
           </div>
 
           <div className="card p-6">
             <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-ink-400">
               {t.contact.hours}
             </h2>
-            <p className="mt-3 text-sm leading-relaxed text-ink-700">
-              {site.hours[locale]}
+            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink-700">
+              {hours}
             </p>
           </div>
         </aside>

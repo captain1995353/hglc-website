@@ -1,11 +1,20 @@
 import Link from "next/link";
 import { getI18n } from "@/lib/i18n";
 import { site } from "@/lib/site";
+import { getSettings, setting } from "@/lib/settings";
 import { Logo } from "./Logo";
 
 export async function Footer() {
   const { locale, t } = await getI18n();
+  const settings = await getSettings();
   const year = new Date().getFullYear();
+
+  const phone = setting(settings, "contact_phone", locale, site.phone);
+  const email = setting(settings, "contact_email", locale, site.email);
+  const address = setting(settings, "address", locale, site.address[locale]);
+  const tagline = setting(settings, "tagline", locale, site.tagline[locale]);
+  const mapsUrl = setting(settings, "maps_url", locale, site.mapsUrl);
+  const facebook = setting(settings, "facebook_url", locale, "");
 
   return (
     <footer className="mt-24 border-t border-ink-800 bg-ink-900 text-ink-200">
@@ -13,8 +22,18 @@ export async function Footer() {
         <div>
           <Logo inverted />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-300">
-            {site.tagline[locale]}
+            {tagline}
           </p>
+          {facebook && (
+            <a
+              href={facebook}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="mt-4 inline-block text-sm text-ink-300 hover:text-white"
+            >
+              Facebook →
+            </a>
+          )}
         </div>
 
         <div>
@@ -67,7 +86,7 @@ export async function Footer() {
             </li>
             <li>
               <a
-                href={site.mapsUrl}
+                href={mapsUrl}
                 target="_blank"
                 rel="noreferrer noopener"
                 className="hover:text-white"
@@ -76,13 +95,13 @@ export async function Footer() {
               </a>
             </li>
             <li>
-              <a href={`tel:${site.phone.replace(/\s/g, "")}`} className="hover:text-white">
-                {site.phone}
+              <a href={`tel:${phone.replace(/\s/g, "")}`} className="hover:text-white">
+                {phone}
               </a>
             </li>
             <li>
-              <a href={`mailto:${site.email}`} className="hover:text-white">
-                {site.email}
+              <a href={`mailto:${email}`} className="hover:text-white">
+                {email}
               </a>
             </li>
           </ul>
@@ -117,7 +136,7 @@ export async function Footer() {
           <p>
             © {year} {site.name}. {t.footer.rights}
           </p>
-          <p>{site.address[locale]}</p>
+          <p>{address}</p>
         </div>
       </div>
     </footer>

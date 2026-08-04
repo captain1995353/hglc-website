@@ -27,7 +27,8 @@ instead of crashing.
 1. Create a project at [supabase.com](https://supabase.com) — the **Singapore**
    region is the closest to Dhaka.
 2. SQL Editor → run [`supabase/schema.sql`](supabase/schema.sql), then
-   [`supabase/seed.sql`](supabase/seed.sql).
+   [`supabase/seed.sql`](supabase/seed.sql), then
+   [`supabase/admin.sql`](supabase/admin.sql) (dashboard settings + stats).
 3. Project Settings → API: copy the project URL, the `anon` key and the
    `service_role` key into `.env.local`.
 4. Authentication → URL Configuration:
@@ -84,18 +85,35 @@ TrxID. The payment sits in `pending_review` until an admin confirms it at
 `/admin`, which activates the enrolment. TrxIDs are unique, so the same slip
 cannot be submitted twice.
 
-## 4. Editing courses, batches and prices
+## 4. The admin dashboard
 
-Everything the catalogue shows lives in the `courses` and `batches` tables —
-edit them in the Supabase table editor, no deploy needed.
+Everything on the site is managed from `/admin` — no SQL, no deploy. Any
+account with `profiles.is_admin = true` sees it.
 
-- **`courses`** — title, summary, description and outcomes in both languages,
-  level, duration, `price_bdt`, `price_usd`, `sort_order`, `is_active`.
-- **`batches`** — one row per intake. `mode` is `offline`, `online` or `hybrid`;
-  `schedule_text` and `room_or_link` are shown to enrolled students.
-  `seats_taken` is maintained automatically by a trigger.
+| Screen | What it does |
+| --- | --- |
+| **Overview** | Student, enrolment, batch and course counts; money collected all-time, last 30 days and in USD; anything waiting on you; latest payments and enrolments. |
+| **Courses & batches** | Create, edit, reorder, hide or delete courses — title, summary, description and outcomes in English *and* Korean, level, duration, both fees. Each course holds its batches: name, on-campus/online/hybrid, start date, schedule, room or Zoom link, seats, open/closed. |
+| **Students** | Search by name or phone; open a student to edit their details, see every enrolment and payment, change enrolment status, or grant/remove admin access. |
+| **Enrolments** | Filter by status, change any enrolment's status, enrol a walk-in by hand, and mark a fee "Paid at centre" for cash taken at the desk. |
+| **Payments** | Manual bKash/Nagad transfers queue for verification with the TrxID and sender number side by side; confirm to activate the enrolment, or reject. Gateway payments settle on their own. Paid rows can be marked refunded, which cancels the enrolment. |
+| **Messages** | Contact-form inbox with handled/unhandled tracking. |
+| **Site settings** | Phone, WhatsApp, email, address, opening hours, Maps link, Facebook, bKash/Nagad/bank details, homepage headline and intro, footer tagline, and a site-wide announcement bar — each in English and Korean. Saved changes are live immediately. |
 
-To hide a course, set `is_active = false`. To close a batch, `is_open = false`.
+Safety rails worth knowing:
+
+- Deleting a course or batch that has enrolments **hides or closes it instead**,
+  so student records are never orphaned.
+- An admin cannot remove their own admin flag — that is the one action that
+  could lock everyone out.
+- Confirming a payment is the only thing that flips an enrolment to `active`,
+  and it runs through the same `settlePayment` path as the gateways, so the
+  amount check and idempotency still apply.
+- A blank field in Site settings means "use the built-in wording", not "show
+  nothing".
+
+Course and batch data still lives in the `courses` and `batches` tables if you
+prefer the Supabase table editor; the dashboard writes to exactly those rows.
 
 ## 5. Deploy
 
@@ -126,7 +144,9 @@ src/
     auth/callback/                Supabase email-link handler
     dashboard/                    student: enrolments, payments, profile
     checkout/[id]/                three payment methods + result screen
-    admin/                        manual payment verification, messages
+    admin/                        full dashboard: overview, courses, batches,
+                                  students, enrolments, payments, messages,
+                                  site settings
     api/payments/                 SSLCommerz callback + IPN, Stripe webhook
     actions/                      server actions (auth, enrol, payments, admin)
   components/                     navbar, footer, cards, forms, map
@@ -137,6 +157,7 @@ src/
 supabase/
   schema.sql                      tables, RLS policies, triggers
   seed.sql                        five courses, two batches each
+  admin.sql                       site_settings, admin policies, stats function
 ```
 
 ## Security notes

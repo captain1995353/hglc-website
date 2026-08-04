@@ -4,6 +4,7 @@ import { listCourses } from "@/lib/data";
 import { CourseCard } from "@/components/CourseCard";
 import { LogoMark } from "@/components/LogoMark";
 import { site, siteUrl } from "@/lib/site";
+import { getSettings, setting } from "@/lib/settings";
 
 /** The logo's four tile colours, reused wherever the site counts to four. */
 const TILE_COLOURS = [
@@ -15,7 +16,13 @@ const TILE_COLOURS = [
 
 export default async function HomePage() {
   const { locale, t } = await getI18n();
-  const courses = await listCourses();
+  const [courses, settings] = await Promise.all([listCourses(), getSettings()]);
+
+  // Dashboard copy wins; a blank field falls back to the built-in wording.
+  const eyebrow = setting(settings, "home_eyebrow", locale, t.home.eyebrow);
+  const heroTitle = setting(settings, "home_title", locale, t.home.heroTitle);
+  const heroBody = setting(settings, "home_body", locale, t.home.heroBody);
+  const mapsUrl = setting(settings, "maps_url", locale, site.mapsUrl);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -56,15 +63,15 @@ export default async function HomePage() {
           <div>
             <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-ink-200">
               <span className="h-1.5 w-1.5 rounded-full bg-coral-500" />
-              {t.home.eyebrow}
+              {eyebrow}
             </p>
 
             <h1 className="max-w-2xl text-4xl font-bold leading-[1.12] tracking-tight sm:text-5xl lg:text-[3.4rem]">
-              {t.home.heroTitle}
+              {heroTitle}
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-ink-200 sm:text-lg">
-              {t.home.heroBody}
+              {heroBody}
             </p>
 
             <div className="mt-9 flex flex-wrap gap-3">
@@ -72,7 +79,7 @@ export default async function HomePage() {
                 {t.home.ctaPrimary}
               </Link>
               <a
-                href={site.mapsUrl}
+                href={mapsUrl}
                 target="_blank"
                 rel="noreferrer noopener"
                 className="btn border border-white/20 bg-white/5 text-white hover:bg-white/10"
