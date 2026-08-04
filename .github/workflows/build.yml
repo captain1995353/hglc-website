@@ -28,10 +28,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # NEXT_PUBLIC_* values are compiled into the client bundle, so they have
-      # to be present here rather than at container start. Add them as repo
-      # secrets (Settings -> Secrets and variables -> Actions) and re-run this
-      # workflow whenever they change.
+      # NEXT_PUBLIC_* values are compiled into the client bundle, so they must
+      # be present at build time rather than at container start.
+      #
+      # The Supabase URL and publishable key are public by design — they ship
+      # inside every page the browser downloads, and row-level security is what
+      # protects the data, not their secrecy. So they live here in plain sight.
+      # The secret key is NOT here: it is injected as runtime env on the server
+      # only (see docker-compose.yml).
+      #
+      # Payment account numbers and phone numbers are managed in the admin
+      # dashboard now, so they are no longer baked into the image.
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -44,10 +51,6 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             NEXT_PUBLIC_SITE_URL=https://hangeulglobal.com
-            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-            NEXT_PUBLIC_BKASH_NUMBER=${{ secrets.NEXT_PUBLIC_BKASH_NUMBER }}
-            NEXT_PUBLIC_NAGAD_NUMBER=${{ secrets.NEXT_PUBLIC_NAGAD_NUMBER }}
-            NEXT_PUBLIC_BANK_DETAILS=${{ secrets.NEXT_PUBLIC_BANK_DETAILS }}
-            NEXT_PUBLIC_CONTACT_PHONE=${{ secrets.NEXT_PUBLIC_CONTACT_PHONE }}
+            NEXT_PUBLIC_SUPABASE_URL=https://aabqtyhspcpktnxzropd.supabase.co
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_RzWbhe3ECLTGxnbyxJxxvA_cJp_Kqzd
             NEXT_PUBLIC_CONTACT_EMAIL=info@hangeulglobal.com
