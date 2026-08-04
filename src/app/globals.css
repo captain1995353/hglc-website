@@ -1,0 +1,234 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------
+   Design tokens, taken straight off the logo: the four puzzle tiles are
+   coral (H), navy (G), indigo (L) and plum (C).
+
+     coral  #e94b4f    navy   #24315e
+     indigo #4c57ab    plum   #61539f
+
+   `ink` is the navy tile extended into a full scale, `brand` the indigo,
+   `coral` and `plum` the remaining two.
+   --------------------------------------------------------------------- */
+@theme {
+  --color-ink-50: #f4f5fa;
+  --color-ink-100: #e5e8f2;
+  --color-ink-200: #c9cee4;
+  --color-ink-300: #a1a9cd;
+  --color-ink-400: #7580ac;
+  --color-ink-500: #525d8d;
+  --color-ink-600: #3b4674;
+  --color-ink-700: #2e3963;
+  --color-ink-800: #24315e;
+  --color-ink-900: #1b2547;
+  --color-ink-950: #121933;
+
+  --color-brand-50: #eef0fb;
+  --color-brand-100: #dee1f7;
+  --color-brand-200: #c0c6ef;
+  --color-brand-300: #9aa2e2;
+  --color-brand-400: #737ed2;
+  --color-brand-500: #5a64c0;
+  --color-brand-600: #4c57ab;
+  --color-brand-700: #414b96;
+  --color-brand-800: #373f7c;
+  --color-brand-900: #303767;
+
+  --color-coral-50: #fef3f3;
+  --color-coral-100: #fde4e5;
+  --color-coral-200: #fbc9cb;
+  --color-coral-300: #f7a1a4;
+  --color-coral-400: #f2777c;
+  --color-coral-500: #e94b4f;
+  --color-coral-600: #d63a3f;
+  --color-coral-700: #b32c31;
+  --color-coral-800: #94272b;
+  --color-coral-900: #7c2528;
+
+  --color-plum-50: #f3f1fa;
+  --color-plum-100: #e7e3f4;
+  --color-plum-200: #cfc8e8;
+  --color-plum-300: #ada2d5;
+  --color-plum-400: #8a7bc0;
+  --color-plum-500: #715fab;
+  --color-plum-600: #61539f;
+  --color-plum-700: #524589;
+  --color-plum-800: #453a72;
+  --color-plum-900: #3b325f;
+
+  --color-paper: #fafafc;
+  --color-paper-dim: #f1f2f8;
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "Noto Sans Bengali",
+    Arial, sans-serif;
+  --font-display:
+    "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Apple SD Gothic Neo",
+    "Malgun Gothic", serif;
+
+  --radius-card: 1rem;
+}
+
+/* --------------------------------------------------------------------- */
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background-color: var(--color-brand-700);
+  color: #fff;
+}
+
+/* Consistent focus ring everywhere, keyboard only. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-700);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@layer components {
+  .container-page {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 76rem;
+    padding-inline: 1.25rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.6rem;
+    padding: 0.7rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease,
+      transform 0.1s ease;
+    cursor: pointer;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background-color: var(--color-brand-700);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--color-brand-800);
+  }
+
+  .btn-accent {
+    background-color: var(--color-coral-500);
+    color: #fff;
+  }
+  .btn-accent:hover:not(:disabled) {
+    background-color: var(--color-coral-600);
+  }
+
+  .btn-outline {
+    border: 1px solid var(--color-ink-200);
+    background-color: #fff;
+    color: var(--color-ink-900);
+  }
+  .btn-outline:hover:not(:disabled) {
+    border-color: var(--color-ink-300);
+    background-color: var(--color-ink-50);
+  }
+
+  .btn-ghost {
+    color: var(--color-ink-700);
+  }
+  .btn-ghost:hover:not(:disabled) {
+    background-color: var(--color-ink-100);
+  }
+
+  .card {
+    background-color: #fff;
+    border: 1px solid var(--color-ink-100);
+    border-radius: var(--radius-card);
+    box-shadow: 0 1px 2px rgba(11, 31, 59, 0.04);
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-ink-700);
+    margin-bottom: 0.35rem;
+  }
+
+  .field-input {
+    width: 100%;
+    border: 1px solid var(--color-ink-200);
+    background-color: #fff;
+    border-radius: 0.6rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.95rem;
+    color: var(--color-ink-900);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .field-input::placeholder {
+    color: var(--color-ink-300);
+  }
+
+  .field-input:focus {
+    outline: none;
+    border-color: var(--color-brand-700);
+    box-shadow: 0 0 0 3px rgba(11, 78, 162, 0.14);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .prose-body p {
+    margin-bottom: 1rem;
+    line-height: 1.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <path fill="#e94b4f" d="M4 12a8 8 0 0 1 8-8h36v44H4z"/>
+  <path fill="#24315e" d="M52 4h36a8 8 0 0 1 8 8v36H52z"/>
+  <path fill="#4c57ab" d="M4 52h44v44H12a8 8 0 0 1-8-8z"/>
+  <path fill="#61539f" d="M52 52h44v36a8 8 0 0 1-8 8H52z"/>
+  <circle cx="50" cy="27" r="8" fill="#24315e"/>
+  <circle cx="27" cy="50" r="8" fill="#e94b4f"/>
+  <circle cx="73" cy="50" r="8" fill="#24315e"/>
+  <circle cx="50" cy="73" r="8" fill="#4c57ab"/>
+  <g fill="#fff" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="28" text-anchor="middle">
+    <text x="28" y="38">H</text>
+    <text x="72" y="38">G</text>
+    <text x="28" y="84">L</text>
+    <text x="72" y="84">C</text>
+  </g>
+</svg>
