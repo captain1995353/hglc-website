@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CodeInput } from "./CodeInput";
+import { CodeInput, MIN_CODE_LENGTH } from "./CodeInput";
 import type { Dictionary } from "@/lib/i18n";
 
 /**
  * Two steps: create the account with a password, then confirm the email
- * address with the 6-digit code Supabase sends. The code path is used
+ * address with the code Supabase emails. The code path is used
  * instead of a confirmation link so students can finish signing up on the
  * same device and tab they started on.
  */
@@ -128,7 +128,7 @@ export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
 
         <button
           type="submit"
-          disabled={busy || code.length !== 6}
+          disabled={busy || code.length < MIN_CODE_LENGTH}
           className="btn btn-primary w-full"
         >
           {busy ? t.auth.working : t.auth.verify}

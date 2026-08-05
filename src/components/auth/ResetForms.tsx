@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CodeInput } from "./CodeInput";
+import { CodeInput, MIN_CODE_LENGTH } from "./CodeInput";
 import type { Dictionary } from "@/lib/i18n";
 
 /**
  * Password reset in three steps on one screen: ask for the email, confirm the
- * 6-digit code, then set the new password. Verifying the code returns a
+ * emailed code, then set the new password. Verifying the code returns a
  * session, which is what allows updateUser to change the password.
  */
 export function ForgotPasswordForm({ t }: { t: Dictionary }) {
@@ -109,7 +109,7 @@ export function ForgotPasswordForm({ t }: { t: Dictionary }) {
 
         <button
           type="submit"
-          disabled={busy || code.length !== 6}
+          disabled={busy || code.length < MIN_CODE_LENGTH}
           className="btn btn-primary w-full"
         >
           {busy ? t.auth.working : t.auth.verify}

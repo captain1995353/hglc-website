@@ -120,8 +120,8 @@ export const en = {
     updatePassword: "Update password",
     checkEmail: "Check your email",
     checkEmailBody:
-      "We sent a 6-digit code to {email}. Enter it below to activate your account.",
-    code: "6-digit code",
+      "We sent a verification code to {email}. Enter it below to activate your account.",
+    code: "Verification code",
     codeHint: "The code expires in 60 minutes. Check your spam folder if it has not arrived.",
     verify: "Verify and continue",
     resend: "Send a new code",
@@ -129,7 +129,7 @@ export const en = {
     codeInvalid: "That code is not right, or it has expired. Request a new one.",
     resetCodeTitle: "Enter your code",
     resetCodeBody:
-      "We sent a 6-digit code to {email}. Enter it, then choose a new password.",
+      "We sent a verification code to {email}. Enter it, then choose a new password.",
     working: "Please wait…",
   },
   dashboard: {
