@@ -32,37 +32,13 @@ function SettingField({ row }: { row: SettingRow }) {
       </label>
       {row.hint && <p className="mb-2 text-xs text-ink-400">{row.hint}</p>}
 
-      <div className={row.bilingual ? "grid gap-3 sm:grid-cols-2" : ""}>
-        <div>
-          {row.bilingual && (
-            <span className="mb-1 block text-[0.7rem] font-semibold uppercase tracking-wide text-ink-400">
-              English
-            </span>
-          )}
-          <Input
-            id={`en:${row.key}`}
-            name={`en:${row.key}`}
-            defaultValue={row.value_en}
-            rows={row.is_long ? 3 : undefined}
-            className="field-input resize-y"
-          />
-        </div>
-
-        {row.bilingual && (
-          <div>
-            <span className="mb-1 block text-[0.7rem] font-semibold uppercase tracking-wide text-ink-400">
-              한국어
-            </span>
-            <Input
-              id={`ko:${row.key}`}
-              name={`ko:${row.key}`}
-              defaultValue={row.value_ko}
-              rows={row.is_long ? 3 : undefined}
-              className="field-input resize-y"
-            />
-          </div>
-        )}
-      </div>
+      <Input
+        id={`en:${row.key}`}
+        name={`en:${row.key}`}
+        defaultValue={row.value_en}
+        rows={row.is_long ? 3 : undefined}
+        className="field-input resize-y"
+      />
     </div>
   );
 }

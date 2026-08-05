@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
-import { LocaleSwitch } from "./LocaleSwitch";
 import { MobileNav, type NavLink } from "./MobileNav";
 import { getI18n } from "@/lib/i18n";
 import { getUser } from "@/lib/supabase/server";
-import { createClient } from "@/lib/supabase/server";
-import { supabaseConfigured } from "@/lib/env";
 import { signOut } from "@/app/actions/auth";
 
 function LogoutButton({ label, block = false }: { label: string; block?: boolean }) {
@@ -22,27 +19,17 @@ function LogoutButton({ label, block = false }: { label: string; block?: boolean
 }
 
 export async function Navbar() {
-  const { locale, t } = await getI18n();
+  const { t } = await getI18n();
   const user = await getUser();
 
-  let isAdmin = false;
-  if (user && supabaseConfigured) {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .maybeSingle();
-    isAdmin = Boolean(data?.is_admin);
-  }
-
+  // The admin dashboard is deliberately not linked from the public site —
+  // staff go straight to /admin.
   const links: NavLink[] = [
     { href: "/courses", label: t.nav.courses },
     { href: "/about", label: t.nav.about },
     { href: "/contact", label: t.nav.contact },
   ];
   if (user) links.push({ href: "/dashboard", label: t.nav.dashboard });
-  if (isAdmin) links.push({ href: "/admin", label: t.nav.admin });
 
   return (
     <header className="sticky top-0 z-50 border-b border-ink-100 bg-paper/85 backdrop-blur">
@@ -62,8 +49,6 @@ export async function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <LocaleSwitch locale={locale} />
-
           <div className="hidden items-center gap-2 md:flex">
             {user ? (
               <LogoutButton label={t.nav.logout} />

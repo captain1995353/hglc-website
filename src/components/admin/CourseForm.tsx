@@ -21,18 +21,11 @@ export function CourseForm({
       <Panel title="Basics">
         <div className="grid gap-5 sm:grid-cols-2">
           <Field
-            label="Title (English)"
+            label="Title"
             name="title_en"
             defaultValue={course?.title_en}
             required
             placeholder="TOPIK I Preparation (Level 1–2)"
-          />
-          <Field
-            label="Title (Korean)"
-            name="title_ko"
-            defaultValue={course?.title_ko}
-            placeholder="TOPIK I 대비 (1~2급)"
-            hint="Left empty, the English title is shown to Korean visitors."
           />
           <Select
             label="Track"
@@ -70,59 +63,34 @@ export function CourseForm({
         title="Short summary"
         description="One line under the title, on the catalogue card and the course page."
       >
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextArea
-            label="Summary (English)"
-            name="summary_en"
-            rows={3}
-            defaultValue={course?.summary_en}
-          />
-          <TextArea
-            label="Summary (Korean)"
-            name="summary_ko"
-            rows={3}
-            defaultValue={course?.summary_ko}
-          />
-        </div>
+        <TextArea
+          label="Summary"
+          name="summary_en"
+          rows={3}
+          defaultValue={course?.summary_en}
+        />
       </Panel>
 
       <Panel title="Full description">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextArea
-            label="Description (English)"
-            name="description_en"
-            rows={6}
-            defaultValue={course?.description_en}
-          />
-          <TextArea
-            label="Description (Korean)"
-            name="description_ko"
-            rows={6}
-            defaultValue={course?.description_ko}
-          />
-        </div>
+        <TextArea
+          label="Description"
+          name="description_en"
+          rows={6}
+          defaultValue={course?.description_en}
+        />
       </Panel>
 
       <Panel
         title="What students will be able to do"
         description="One point per line. These become the ticked list on the course page."
       >
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextArea
-            label="Outcomes (English)"
-            name="outcomes_en"
-            rows={6}
-            defaultValue={course?.outcomes_en?.join("\n")}
-            hint="One per line."
-          />
-          <TextArea
-            label="Outcomes (Korean)"
-            name="outcomes_ko"
-            rows={6}
-            defaultValue={course?.outcomes_ko?.join("\n")}
-            hint="One per line."
-          />
-        </div>
+        <TextArea
+          label="Outcomes"
+          name="outcomes_en"
+          rows={6}
+          defaultValue={course?.outcomes_en?.join("\n")}
+          hint="One per line."
+        />
       </Panel>
 
       <Panel title="Length and fee">

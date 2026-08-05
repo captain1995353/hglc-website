@@ -43,7 +43,7 @@ export async function Footer() {
           <ul className="space-y-2 text-sm">
             <li>
               <Link href="/courses/korean-beginner" className="hover:text-white">
-                {locale === "ko" ? "기초 한국어" : "Basic Korean"}
+                Basic Korean
               </Link>
             </li>
             <li>
@@ -58,7 +58,7 @@ export async function Footer() {
             </li>
             <li>
               <Link href="/courses/english-foundation" className="hover:text-white">
-                {locale === "ko" ? "기초 영어" : "Basic English"}
+                Basic English
               </Link>
             </li>
             <li>

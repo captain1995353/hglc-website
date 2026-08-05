@@ -79,13 +79,10 @@ export async function getSettingRows(): Promise<SettingRow[]> {
 export function setting(
   settings: Settings,
   key: string,
-  locale: Locale,
+  _locale: Locale = "en",
   fallback = "",
 ): string {
   const entry = settings[key];
   if (!entry) return fallback;
-  const localised = locale === "ko" ? entry.ko : entry.en;
-  if (localised.trim()) return localised;
-  if (entry.en.trim()) return entry.en;
-  return fallback;
+  return entry.en.trim() ? entry.en : fallback;
 }

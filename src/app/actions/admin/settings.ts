@@ -11,7 +11,9 @@ import { requireAdmin } from "./guard";
 export async function saveSettings(form: FormData) {
   const { db } = await requireAdmin();
 
-  const updates = new Map<string, { value_en: string; value_ko: string }>();
+  // Only the columns actually present in the form are touched, so a language
+  // that is not currently edited keeps whatever it already holds.
+  const updates = new Map<string, Record<string, string>>();
 
   for (const [field, raw] of form.entries()) {
     const value = typeof raw === "string" ? raw.trim() : "";
@@ -21,9 +23,8 @@ export async function saveSettings(form: FormData) {
     const key = rest.join(":");
     if (!key) continue;
 
-    const entry = updates.get(key) ?? { value_en: "", value_ko: "" };
-    if (prefix === "en") entry.value_en = value;
-    else entry.value_ko = value;
+    const entry = updates.get(key) ?? {};
+    entry[prefix === "en" ? "value_en" : "value_ko"] = value;
     updates.set(key, entry);
   }
 

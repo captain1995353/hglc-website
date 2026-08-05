@@ -2,12 +2,25 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/app/actions/admin/guard";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { LogoMark } from "@/components/LogoMark";
+import { signOut } from "@/app/actions/auth";
 
 export const metadata: Metadata = {
   title: "Admin",
   robots: { index: false, follow: false },
 };
 
+/**
+ * Never prerender any admin route. Without this, a build that runs without
+ * Supabase credentials can snapshot these pages as static HTML, and the
+ * signed-in check would stop running per request.
+ */
+export const dynamic = "force-dynamic";
+
+/**
+ * The dashboard is a separate application shell: its own header, its own
+ * navigation, no public site chrome. Nothing on the public site links here.
+ */
 export default async function AdminLayout({
   children,
 }: {
@@ -33,30 +46,53 @@ export default async function AdminLayout({
   };
 
   return (
-    <div className="container-page py-8 sm:py-10">
-      <div className="grid gap-8 lg:grid-cols-[13rem_1fr] lg:items-start">
-        <aside className="lg:sticky lg:top-24">
-          <p className="mb-3 hidden text-xs font-semibold uppercase tracking-[0.14em] text-ink-400 lg:block">
-            Dashboard
-          </p>
-          <AdminNav badges={badges} />
+    <>
+      <header className="sticky top-0 z-50 border-b border-ink-800 bg-ink-900 text-white">
+        <div className="container-page flex h-[60px] items-center justify-between gap-4">
+          <Link href="/admin" className="flex items-center gap-2.5">
+            <LogoMark className="h-8 w-8" onDark />
+            <span className="leading-tight">
+              <span className="block text-sm font-bold uppercase tracking-[0.02em]">
+                Hangeul
+              </span>
+              <span className="block text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-ink-300">
+                Admin dashboard
+              </span>
+            </span>
+          </Link>
 
-          <div className="mt-6 hidden border-t border-ink-100 pt-5 lg:block">
-            <p className="text-xs text-ink-400">Signed in as</p>
-            <p className="text-sm font-semibold text-ink-800">
+          <div className="flex items-center gap-4">
+            <span className="hidden text-sm text-ink-300 sm:inline">
               {profile.full_name || "Admin"}
-            </p>
+            </span>
             <Link
               href="/"
-              className="mt-3 inline-block text-sm font-medium text-brand-700 hover:underline"
+              target="_blank"
+              className="text-sm font-medium text-ink-200 hover:text-white"
             >
-              View site →
+              View site ↗
             </Link>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="rounded-lg border border-white/20 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                Sign out
+              </button>
+            </form>
           </div>
-        </aside>
+        </div>
+      </header>
 
-        <div className="min-w-0">{children}</div>
+      <div className="container-page flex-1 py-8">
+        <div className="grid gap-8 lg:grid-cols-[13rem_1fr] lg:items-start">
+          <aside className="lg:sticky lg:top-[76px]">
+            <AdminNav badges={badges} />
+          </aside>
+
+          <div className="min-w-0">{children}</div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

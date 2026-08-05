@@ -10,14 +10,13 @@ function courseFields(form: FormData) {
     slug: str(form, "slug") || slugify(title),
     track: str(form, "track") === "english" ? "english" : "korean",
     title_en: title,
-    title_ko: str(form, "title_ko") || title,
+    // The site is English-only, but title_ko is NOT NULL — mirror the English
+    // title so the column stays valid if a second language returns later.
+    title_ko: title,
     summary_en: str(form, "summary_en"),
-    summary_ko: str(form, "summary_ko"),
     description_en: str(form, "description_en"),
-    description_ko: str(form, "description_ko"),
     level: str(form, "level"),
     outcomes_en: lines(form, "outcomes_en"),
-    outcomes_ko: lines(form, "outcomes_ko"),
     duration_weeks: num(form, "duration_weeks", 12),
     hours_per_week: num(form, "hours_per_week", 4),
     price_bdt: num(form, "price_bdt", 0),

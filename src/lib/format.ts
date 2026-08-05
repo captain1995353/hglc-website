@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/i18n";
 
-const localeTag: Record<Locale, string> = { en: "en-GB", ko: "ko-KR" };
+const localeTag: Record<Locale, string> = { en: "en-GB" };
 
 export function formatMoney(amount: number, currency: string, locale: Locale = "en") {
   const value = Number(amount) || 0;

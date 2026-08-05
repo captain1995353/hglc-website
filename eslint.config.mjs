@@ -10,6 +10,17 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
+    rules: {
+      // A leading underscore marks a parameter kept for signature
+      // compatibility — the locale arguments left over from the bilingual
+      // version, for instance.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
+  {
     ignores: [".next/**", "node_modules/**"],
   },
 ];
