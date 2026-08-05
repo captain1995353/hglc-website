@@ -13,7 +13,7 @@ export default async function ForgotPasswordPage() {
   return (
     <AuthShell
       title={t.auth.resetTitle}
-      subtitle={t.auth.resetSubtitle}
+      subtitle="We will email you a 6-digit code to confirm it is you."
       footerText={t.auth.haveAccount}
       footerHref="/login"
       footerLink={t.auth.login}

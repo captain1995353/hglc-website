@@ -3,18 +3,27 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { CodeInput } from "./CodeInput";
 import type { Dictionary } from "@/lib/i18n";
 
+/**
+ * Two steps: create the account with a password, then confirm the email
+ * address with the 6-digit code Supabase sends. The code path is used
+ * instead of a confirmation link so students can finish signing up on the
+ * same device and tab they started on.
+ */
 export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
   const router = useRouter();
+  const [step, setStep] = useState<"details" | "code">("details");
   const [form, setForm] = useState({
     full_name: "",
     email: "",
     phone: "",
     password: "",
   });
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [needsConfirm, setNeedsConfirm] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   function update(key: keyof typeof form) {
@@ -22,7 +31,7 @@ export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
       setForm((f) => ({ ...f, [key]: e.target.value }));
   }
 
-  async function onSubmit(event: React.FormEvent) {
+  async function onCreateAccount(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
     setError(null);
@@ -33,7 +42,6 @@ export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
       password: form.password,
       options: {
         data: { full_name: form.full_name.trim(), phone: form.phone.trim() },
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
 
@@ -43,30 +51,103 @@ export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
       return;
     }
 
-    // With email confirmation on, Supabase returns a user but no session.
+    // Email confirmation off would hand us a session straight away.
     if (data.session) {
       router.replace(next);
       router.refresh();
       return;
     }
 
-    setNeedsConfirm(true);
+    setStep("code");
     setBusy(false);
   }
 
-  if (needsConfirm) {
+  async function onVerify(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+
+    const supabase = createClient();
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: form.email.trim(),
+      token: code,
+      type: "signup",
+    });
+
+    if (verifyError) {
+      setError(t.auth.codeInvalid);
+      setBusy(false);
+      return;
+    }
+
+    router.replace(next);
+    router.refresh();
+  }
+
+  async function onResend() {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+
+    const supabase = createClient();
+    const { error: resendError } = await supabase.auth.resend({
+      type: "signup",
+      email: form.email.trim(),
+    });
+
+    if (resendError) setError(resendError.message);
+    else setNotice(t.auth.resent);
+    setBusy(false);
+  }
+
+  if (step === "code") {
     return (
-      <div className="rounded-lg bg-brand-50 px-5 py-6 text-center">
-        <h2 className="text-base font-bold text-brand-800">{t.auth.checkEmail}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-ink-600">
-          {t.auth.checkEmailBody}
-        </p>
-      </div>
+      <form onSubmit={onVerify} className="space-y-4">
+        <div className="rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-800">
+          {t.auth.checkEmailBody.replace("{email}", form.email.trim())}
+        </div>
+
+        {error && (
+          <p className="rounded-lg bg-coral-50 px-4 py-3 text-sm text-coral-700">
+            {error}
+          </p>
+        )}
+        {notice && (
+          <p className="rounded-lg bg-paper-dim px-4 py-3 text-sm text-ink-600">
+            {notice}
+          </p>
+        )}
+
+        <CodeInput
+          value={code}
+          onChange={setCode}
+          label={t.auth.code}
+          hint={t.auth.codeHint}
+        />
+
+        <button
+          type="submit"
+          disabled={busy || code.length !== 6}
+          className="btn btn-primary w-full"
+        >
+          {busy ? t.auth.working : t.auth.verify}
+        </button>
+
+        <button
+          type="button"
+          onClick={onResend}
+          disabled={busy}
+          className="btn btn-ghost w-full text-sm"
+        >
+          {t.auth.resend}
+        </button>
+      </form>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onCreateAccount} className="space-y-4">
       {error && (
         <p className="rounded-lg bg-coral-50 px-4 py-3 text-sm text-coral-700">{error}</p>
       )}
