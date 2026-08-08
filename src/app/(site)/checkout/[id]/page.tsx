@@ -8,11 +8,8 @@ import { manualPaymentAccounts, site } from "@/lib/site";
 import { getSettings, setting } from "@/lib/settings";
 import { stripeEnabled } from "@/lib/payments/stripe";
 import { sslcommerzConfigured } from "@/lib/env";
-import {
-  startSslPayment,
-  startStripePayment,
-  submitManualPayment,
-} from "@/app/actions/payments";
+import { startSslPayment, startStripePayment } from "@/app/actions/payments";
+import { ManualPaymentForm } from "@/components/ManualPaymentForm";
 import type { Batch, Course } from "@/lib/types";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
@@ -95,6 +92,8 @@ export default async function CheckoutPage({
   const hasAccounts = Boolean(accounts.bkash || accounts.nagad || accounts.bank);
   const contactPhone = setting(settings, "contact_phone", locale, site.phone);
   const contactEmail = setting(settings, "contact_email", locale, site.email);
+  const address = setting(settings, "address", locale, site.address[locale]);
+  const openingHours = setting(settings, "opening_hours", locale, site.hours[locale]);
 
   return (
     <div className="container-page py-12 sm:py-16">
@@ -210,6 +209,14 @@ export default async function CheckoutPage({
                     {paymentNote}
                   </p>
 
+                  <div className="mt-4 rounded-lg border border-ink-200 bg-white p-4 text-sm">
+                    <p className="text-xs uppercase tracking-wide text-ink-400">
+                      Paying cash at the centre
+                    </p>
+                    <p className="mt-1 whitespace-pre-line text-ink-800">{address}</p>
+                    <p className="mt-1 text-xs text-ink-500">{openingHours}</p>
+                  </div>
+
                   {!hasAccounts ? (
                     <p className="mt-4 rounded-lg bg-coral-50 px-4 py-3 text-sm text-coral-700">
                       Our payment details are not listed here yet. Please call{" "}
@@ -260,79 +267,10 @@ export default async function CheckoutPage({
                   </dl>
                   )}
 
-                  <form
-                    action={submitManualPayment}
-                    encType="multipart/form-data"
-                    className="mt-5 grid gap-4 sm:grid-cols-2"
-                  >
-                    <input type="hidden" name="enrollment_id" value={id} />
-
-                    <div>
-                      <label className="field-label" htmlFor="channel">
-                        {t.dashboard.method}
-                      </label>
-                      <select id="channel" name="channel" className="field-input">
-                        <option value="bkash">bKash</option>
-                        <option value="nagad">Nagad</option>
-                        <option value="bank">Bank</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="field-label" htmlFor="sender_number">
-                        {t.checkout.manualSender}
-                      </label>
-                      <input
-                        id="sender_number"
-                        name="sender_number"
-                        required
-                        placeholder="01XXXXXXXXX"
-                        className="field-input"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="field-label" htmlFor="trx_id">
-                        {t.checkout.manualTrxId}
-                      </label>
-                      <input
-                        id="trx_id"
-                        name="trx_id"
-                        required
-                        className="field-input font-mono uppercase"
-                      />
-                      <p className="mt-1 text-xs text-ink-400">
-                        {t.checkout.manualTrxIdHint}
-                      </p>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <label className="field-label" htmlFor="receipt">
-                        Receipt or screenshot
-                      </label>
-                      <input
-                        id="receipt"
-                        name="receipt"
-                        type="file"
-                        accept="image/*,application/pdf"
-                        className="field-input file:mr-3 file:rounded-md file:border-0 file:bg-ink-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-ink-700"
-                      />
-                      <p className="mt-1 text-xs text-ink-400">
-                        A photo of the confirmation SMS or the app receipt. Up to 5 MB.
-                        Optional, but it gets your seat confirmed faster.
-                      </p>
-                    </div>
-
-                    <div className="sm:col-span-2">
-                      <button type="submit" className="btn btn-primary">
-                        {t.checkout.manualSubmit}
-                      </button>
-                      <p className="mt-2 text-xs text-ink-400">
-                        We check the transfer against our statement and activate your
-                        enrolment, usually within one working day.
-                      </p>
-                    </div>
-                  </form>
+                  <ManualPaymentForm
+                    enrollmentId={id}
+                    submitLabel={t.checkout.manualSubmit}
+                  />
                 </section>
               </div>
             </>

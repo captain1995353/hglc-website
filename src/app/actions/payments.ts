@@ -172,14 +172,43 @@ const RECEIPT_TYPES = [
 ];
 const RECEIPT_MAX_BYTES = 5 * 1024 * 1024;
 
+const CHANNELS = ["bkash", "nagad", "bank", "cash"] as const;
+type Channel = (typeof CHANNELS)[number];
+
+/** Wallet transfers come from a phone; bank and cash payments do not. */
+const NEEDS_SENDER: Record<Channel, boolean> = {
+  bkash: true,
+  nagad: true,
+  bank: false,
+  cash: false,
+};
+
+/** Cash handed over the desk has no reference to quote. */
+const NEEDS_REFERENCE: Record<Channel, boolean> = {
+  bkash: true,
+  nagad: true,
+  bank: true,
+  cash: false,
+};
+
 export async function submitManualPayment(formData: FormData) {
   const enrollmentId = String(formData.get("enrollment_id") || "");
   const trxId = String(formData.get("trx_id") || "").trim().toUpperCase();
   const sender = String(formData.get("sender_number") || "").trim();
-  const channel = String(formData.get("channel") || "bkash");
+  const note = String(formData.get("note") || "").trim();
+  const raw = String(formData.get("channel") || "bkash");
+  const channel: Channel = (CHANNELS as readonly string[]).includes(raw)
+    ? (raw as Channel)
+    : "bkash";
   const receipt = formData.get("receipt");
 
-  if (!trxId || !sender) redirect(`/checkout/${enrollmentId}?error=missing`);
+  // Mirror of the form's own rules — the browser can be bypassed.
+  if (NEEDS_REFERENCE[channel] && !trxId) {
+    redirect(`/checkout/${enrollmentId}?error=missing`);
+  }
+  if (NEEDS_SENDER[channel] && !sender) {
+    redirect(`/checkout/${enrollmentId}?error=missing`);
+  }
 
   const info = await loadEnrollment(enrollmentId);
   const admin = createAdminClient();
@@ -198,7 +227,8 @@ export async function submitManualPayment(formData: FormData) {
 
     const extension = receipt.name.split(".").pop()?.toLowerCase() || "jpg";
     // The first path segment is the owner — the storage policies key off it.
-    const path = `${info.userId}/${trxId}-${Date.now()}.${extension}`;
+    const slug = trxId || channel.toUpperCase();
+    const path = `${info.userId}/${slug}-${Date.now()}.${extension}`;
 
     const { error: uploadError } = await admin.storage
       .from("receipts")
@@ -212,6 +242,10 @@ export async function submitManualPayment(formData: FormData) {
     receiptPath = path;
   }
 
+  // A quoted reference doubles as our transaction id; cash has none, so it
+  // gets a generated one that still has to be unique.
+  const tranId = trxId ? `MAN-${trxId}` : `CASH-${newTranId("").replace(/^-/, "")}`;
+
   const { error } = await admin.from("payments").insert({
     enrollment_id: info.enrollmentId,
     user_id: info.userId,
@@ -219,16 +253,15 @@ export async function submitManualPayment(formData: FormData) {
     status: "pending_review",
     amount: info.priceBdt,
     currency: "BDT",
-    // The student's own slip reference doubles as our transaction id.
-    tran_id: `MAN-${trxId}`,
-    provider_ref: trxId,
-    sender_number: sender,
+    tran_id: tranId,
+    provider_ref: trxId || null,
+    sender_number: sender || null,
     receipt_path: receiptPath,
-    meta: { channel },
+    meta: { channel, ...(note ? { note } : {}) },
   });
 
   if (error) {
-    // Unique violation = this TrxID was already submitted by someone.
+    // Unique violation = this reference was already submitted by someone.
     const reason = error.code === "23505" ? "duplicate_trx" : "insert";
     redirect(`/checkout/${enrollmentId}?error=${reason}`);
   }

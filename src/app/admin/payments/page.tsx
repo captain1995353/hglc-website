@@ -114,6 +114,12 @@ export default async function AdminPaymentsPage({
             const channel = String(
               (payment.meta as Record<string, unknown>)?.channel ?? "manual",
             );
+            const channelLabel =
+              channel === "cash"
+                ? "Cash at centre"
+                : channel === "bank"
+                  ? "Bank transfer"
+                  : channel;
 
             return (
               <div key={payment.id} className="card p-6">
@@ -126,8 +132,14 @@ export default async function AdminPaymentsPage({
                       >
                         {profile?.full_name || "(no name)"}
                       </Link>
-                      <span className="badge bg-ink-100 capitalize text-ink-600">
-                        {channel}
+                      <span
+                        className={`badge capitalize ${
+                          channel === "cash"
+                            ? "bg-plum-50 text-plum-700"
+                            : "bg-ink-100 text-ink-600"
+                        }`}
+                      >
+                        {channelLabel}
                       </span>
                     </div>
 
@@ -144,18 +156,33 @@ export default async function AdminPaymentsPage({
                           {formatMoney(Number(payment.amount), payment.currency)}
                         </dd>
                       </div>
-                      <div className="flex gap-2">
-                        <dt className="text-ink-400">TrxID</dt>
-                        <dd className="font-mono font-semibold text-ink-900">
-                          {payment.provider_ref}
-                        </dd>
-                      </div>
-                      <div className="flex gap-2">
-                        <dt className="text-ink-400">Sent from</dt>
-                        <dd className="font-mono text-ink-800">
-                          {payment.sender_number}
-                        </dd>
-                      </div>
+                      {payment.provider_ref && (
+                        <div className="flex gap-2">
+                          <dt className="text-ink-400">
+                            {channel === "bank" ? "Reference" : "TrxID"}
+                          </dt>
+                          <dd className="font-mono font-semibold text-ink-900">
+                            {payment.provider_ref}
+                          </dd>
+                        </div>
+                      )}
+                      {payment.sender_number && (
+                        <div className="flex gap-2">
+                          <dt className="text-ink-400">Sent from</dt>
+                          <dd className="font-mono text-ink-800">
+                            {payment.sender_number}
+                          </dd>
+                        </div>
+                      )}
+                      {typeof (payment.meta as Record<string, unknown>)?.note ===
+                        "string" && (
+                        <div className="flex gap-2 sm:col-span-2">
+                          <dt className="text-ink-400">Student note</dt>
+                          <dd className="text-ink-800">
+                            {String((payment.meta as Record<string, unknown>).note)}
+                          </dd>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <dt className="text-ink-400">Submitted</dt>
                         <dd className="text-ink-600">
@@ -183,8 +210,9 @@ export default async function AdminPaymentsPage({
                     </div>
 
                     <p className="mt-3 text-xs text-ink-400">
-                      Check the TrxID against your bKash/Nagad statement before
-                      confirming — confirming activates the enrolment.
+                      {channel === "cash"
+                        ? "Check this against the day's takings before confirming — confirming activates the enrolment."
+                        : "Check the reference against your statement before confirming — confirming activates the enrolment."}
                     </p>
                   </div>
 
