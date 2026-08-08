@@ -5,6 +5,7 @@ import { CourseCard } from "@/components/CourseCard";
 import { LogoMark } from "@/components/LogoMark";
 import { site, siteUrl } from "@/lib/site";
 import { getSettings, setting } from "@/lib/settings";
+import { MapEmbed } from "@/components/MapEmbed";
 
 /** The logo's four tile colours, reused wherever the site counts to four. */
 const TILE_COLOURS = [
@@ -23,6 +24,10 @@ export default async function HomePage() {
   const heroTitle = setting(settings, "home_title", locale, t.home.heroTitle);
   const heroBody = setting(settings, "home_body", locale, t.home.heroBody);
   const mapsUrl = setting(settings, "maps_url", locale, site.mapsUrl);
+  const address = setting(settings, "address", locale, site.address[locale]);
+  const openingHours = setting(settings, "opening_hours", locale, site.hours[locale]);
+  const phone = setting(settings, "contact_phone", locale, site.phone);
+  const email = setting(settings, "contact_email", locale, site.email);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -213,6 +218,66 @@ export default async function HomePage() {
             </li>
           ))}
         </ol>
+      </section>
+
+      {/* ---------------- Where we are ---------------- */}
+      <section className="bg-paper-dim py-16 sm:py-20">
+        <div className="container-page grid gap-8 lg:grid-cols-[1fr_1.4fr] lg:items-center">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              Find the centre
+            </h2>
+            <p className="mt-3 whitespace-pre-line text-ink-600">{address}</p>
+
+            <dl className="mt-6 space-y-3 text-sm">
+              <div>
+                <dt className="text-xs uppercase tracking-[0.12em] text-ink-400">
+                  Opening hours
+                </dt>
+                <dd className="mt-0.5 whitespace-pre-line text-ink-800">
+                  {openingHours}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.12em] text-ink-400">
+                  Phone
+                </dt>
+                <dd className="mt-0.5">
+                  <a
+                    href={`tel:${phone.replace(/\s/g, "")}`}
+                    className="font-semibold text-brand-700 hover:underline"
+                  >
+                    {phone}
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-[0.12em] text-ink-400">
+                  Email
+                </dt>
+                <dd className="mt-0.5">
+                  <a
+                    href={`mailto:${email}`}
+                    className="font-semibold text-brand-700 hover:underline"
+                  >
+                    {email}
+                  </a>
+                </dd>
+              </div>
+            </dl>
+
+            <Link href="/contact" className="btn btn-outline mt-6">
+              {t.nav.contact}
+            </Link>
+          </div>
+
+          <MapEmbed
+            title={`${site.name} — map`}
+            address={address}
+            directionsUrl={mapsUrl}
+            height="h-[340px] sm:h-[420px]"
+          />
+        </div>
       </section>
 
       {/* ---------------- CTA ---------------- */}

@@ -104,7 +104,11 @@ export default async function AboutPage() {
       </section>
 
       <section className="container-page pb-4">
-        <MapEmbed title={`${site.name} — map`} />
+        <MapEmbed
+          title={`${site.name} — map`}
+          address={address}
+          directionsUrl={mapsUrl}
+        />
       </section>
     </>
   );
