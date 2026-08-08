@@ -89,6 +89,7 @@ export default async function CheckoutPage({
     bank: setting(settings, "bank_details", locale, manualPaymentAccounts.bank),
   };
   const paymentNote = setting(settings, "payment_note", locale, t.checkout.manualBody);
+  const hasAccounts = Boolean(accounts.bkash || accounts.nagad || accounts.bank);
   const address = setting(settings, "address", locale, site.address[locale]);
   const openingHours = setting(settings, "opening_hours", locale, site.hours[locale]);
 
@@ -214,6 +215,7 @@ export default async function CheckoutPage({
                     <p className="mt-1 text-xs text-ink-500">{openingHours}</p>
                   </div>
 
+                  {hasAccounts && (
                   <dl className="mt-4 grid gap-2 rounded-lg bg-paper-dim p-4 text-sm sm:grid-cols-2">
                     {accounts.bkash && (
                       <div>
@@ -246,6 +248,7 @@ export default async function CheckoutPage({
                       </div>
                     )}
                   </dl>
+                  )}
 
                   <ManualPaymentForm
                     enrollmentId={id}

@@ -156,23 +156,6 @@ export function ManualPaymentForm({
         </div>
       )}
 
-      {channel === "cash" && (
-        <div className="sm:col-span-2">
-          <label className="field-label" htmlFor="note">
-            Who did you pay, and when?
-          </label>
-          <input
-            id="note"
-            name="note"
-            placeholder="Paid at the desk on Sunday morning"
-            className="field-input"
-          />
-          <p className="mt-1 text-xs text-ink-400">
-            Optional, but it helps us find your payment faster.
-          </p>
-        </div>
-      )}
-
       <div className="sm:col-span-2">
         <label className="field-label" htmlFor="receipt">
           {channel === "cash" ? "Photo of your money receipt" : "Receipt or screenshot"}

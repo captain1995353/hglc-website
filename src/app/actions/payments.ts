@@ -195,7 +195,6 @@ export async function submitManualPayment(formData: FormData) {
   const enrollmentId = String(formData.get("enrollment_id") || "");
   const trxId = String(formData.get("trx_id") || "").trim().toUpperCase();
   const sender = String(formData.get("sender_number") || "").trim();
-  const note = String(formData.get("note") || "").trim();
   const raw = String(formData.get("channel") || "bkash");
   const channel: Channel = (CHANNELS as readonly string[]).includes(raw)
     ? (raw as Channel)
@@ -266,7 +265,7 @@ export async function submitManualPayment(formData: FormData) {
     provider_ref: trxId || null,
     sender_number: sender || null,
     receipt_path: receiptPath,
-    meta: { channel, ...(note ? { note } : {}) },
+    meta: { channel },
   });
 
   if (error) {
