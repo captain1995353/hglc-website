@@ -100,6 +100,7 @@ export const en = {
   auth: {
     loginTitle: "Log in",
     loginSubtitle: "Welcome back. Continue where you left off.",
+    identifier: "Email or username",
     signupTitle: "Create your student account",
     signupSubtitle: "One account for enrolling, paying and seeing your class schedule.",
     fullName: "Full name",
