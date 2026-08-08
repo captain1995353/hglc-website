@@ -12,7 +12,8 @@ import {
   TextArea,
 } from "@/components/admin/ui";
 import { ClassTabs } from "@/components/admin/ClassTabs";
-import { formatDateTime } from "@/lib/format";
+import { DateTimeField } from "@/components/admin/DateTimeField";
+import { LocalTime } from "@/components/LocalTime";
 import type { Assignment } from "@/lib/types";
 
 export default async function AssignmentsPage({
@@ -98,8 +99,14 @@ export default async function AssignmentsPage({
                     </div>
                     <p className="mt-1 text-xs text-ink-400">
                       {assignment.due_at
-                        ? `Due ${formatDateTime(assignment.due_at)}${overdue ? " · closed" : ""}`
-                        : "No due date"}{" "}
+                        ? null
+                        : "No due date"}
+                      {assignment.due_at && (
+                        <>
+                          Due <LocalTime iso={assignment.due_at} />
+                          {overdue ? " · closed" : ""}
+                        </>
+                      )}{" "}
                       · out of {assignment.max_score}
                     </p>
                   </div>
@@ -138,7 +145,7 @@ export default async function AssignmentsPage({
             placeholder="Write 150–200 words. Use at least five past-tense verbs."
             className="sm:col-span-2"
           />
-          <Field label="Due" name="due_at" type="datetime-local" />
+          <DateTimeField label="Due" name="due_at" />
           <Field
             label="Out of"
             name="max_score"

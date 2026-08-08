@@ -14,16 +14,9 @@ import {
   Panel,
   TextArea,
 } from "@/components/admin/ui";
-import { formatDateTime } from "@/lib/format";
+import { DateTimeField } from "@/components/admin/DateTimeField";
+import { LocalTime } from "@/components/LocalTime";
 import type { AdmissionWindow } from "@/lib/types";
-
-/** `datetime-local` wants `YYYY-MM-DDTHH:mm`, not a full ISO string. */
-function forInput(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 export default async function AdmissionsPage({
   searchParams,
@@ -64,7 +57,7 @@ export default async function AdmissionsPage({
         saved={created || saved || deleted}
         error={error}
         savedText={
-          created ? "Admissions are open." : deleted ? "Window deleted." : "Saved."
+          created ? "Admission window created." : deleted ? "Window deleted." : "Saved."
         }
         messages={{
           fields: "A title and a closing date are required.",
@@ -85,9 +78,13 @@ export default async function AdmissionsPage({
             {live ? "Admissions open" : "Admissions closed"}
           </p>
           <p className="mt-1 text-sm text-ink-500">
-            {live
-              ? `${live.title} — closes ${formatDateTime(live.closes_at)}`
-              : "The catalogue shows courses, but the enrol button is disabled."}
+            {live ? (
+              <>
+                {live.title} — closes <LocalTime iso={live.closes_at} />
+              </>
+            ) : (
+              "The catalogue shows courses, but the enrol button is disabled."
+            )}
           </p>
         </div>
       </div>
@@ -126,7 +123,7 @@ export default async function AdmissionsPage({
                     {state}
                   </span>
                   <span className="text-xs text-ink-400">
-                    Opened {formatDateTime(window.opens_at)}
+                    Opened <LocalTime iso={window.opens_at} />
                   </span>
                 </div>
 
@@ -137,11 +134,10 @@ export default async function AdmissionsPage({
                     defaultValue={window.title}
                     required
                   />
-                  <Field
+                  <DateTimeField
                     label="Closes"
                     name="closes_at"
-                    type="datetime-local"
-                    defaultValue={forInput(window.closes_at)}
+                    defaultValue={window.closes_at}
                     required
                   />
                   <TextArea
@@ -205,13 +201,12 @@ export default async function AdmissionsPage({
             required
             placeholder="Autumn intake 2026"
           />
-          <Field
+          <DateTimeField
             label="Opens"
             name="opens_at"
-            type="datetime-local"
             hint="Leave empty to open immediately."
           />
-          <Field label="Closes" name="closes_at" type="datetime-local" required />
+          <DateTimeField label="Closes" name="closes_at" required />
           <TextArea
             label="Note shown to students"
             name="note"
