@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseConfigured } from "@/lib/env";
+import { getAdmissionState } from "@/lib/admissions";
 
 /**
  * Creates (or re-uses) an enrolment for the signed-in student and sends them
@@ -16,6 +17,11 @@ export async function enroll(formData: FormData) {
   const slug = String(formData.get("slug") || "");
 
   if (!supabaseConfigured) redirect(`/courses/${slug}?error=preview`);
+
+  // The button is hidden while admissions are shut; this stops a stale page
+  // or a hand-made request from slipping through anyway.
+  const admissions = await getAdmissionState();
+  if (!admissions.open) redirect(`/courses/${slug}?error=admissions_closed`);
   if (!batchId || !courseId) redirect(`/courses/${slug}?error=missing`);
 
   const supabase = await createClient();

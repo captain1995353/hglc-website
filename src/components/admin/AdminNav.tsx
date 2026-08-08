@@ -15,6 +15,7 @@ const LINKS: NavItem[] = [
   { href: "/admin", label: "Overview", roles: ["admin", "staff"], exact: true },
   { href: "/admin/classes", label: "My classes", roles: ["teacher", "admin"] },
   { href: "/admin/courses", label: "Courses & batches", roles: ["admin"] },
+  { href: "/admin/admissions", label: "Admissions", roles: ["admin"] },
   { href: "/admin/students", label: "Students", roles: ["admin", "staff"] },
   { href: "/admin/enrolments", label: "Enrolments", roles: ["admin", "staff"] },
   { href: "/admin/payments", label: "Payments", roles: ["admin", "staff"] },

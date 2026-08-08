@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireRole } from "@/app/actions/admin/guard";
 import { AdminHeader, EmptyState, Panel, TableShell } from "@/components/admin/ui";
 import { formatDate } from "@/lib/format";
@@ -68,11 +69,41 @@ export default async function MyClassesPage() {
           const roster = rosterByBatch.get(batch.batch_id) ?? [];
 
           return (
-            <Panel
-              key={batch.batch_id}
-              title={batch.course_title}
-              description={`${batch.batch_name} · ${batch.mode === "online" ? "Live online" : batch.mode === "hybrid" ? "Hybrid" : "On campus"}`}
-            >
+            <Panel key={batch.batch_id}>
+              <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-ink-900">
+                    <Link
+                      href={`/admin/classes/${batch.batch_id}`}
+                      className="hover:text-brand-700"
+                    >
+                      {batch.course_title}
+                    </Link>
+                  </h2>
+                  <p className="mt-1 text-sm text-ink-500">
+                    {batch.batch_name} ·{" "}
+                    {batch.mode === "online"
+                      ? "Live online"
+                      : batch.mode === "hybrid"
+                        ? "Hybrid"
+                        : "On campus"}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    href={`/admin/classes/${batch.batch_id}/attendance`}
+                    className="btn btn-primary px-3 py-1.5 text-xs"
+                  >
+                    Take attendance
+                  </Link>
+                  <Link
+                    href={`/admin/classes/${batch.batch_id}`}
+                    className="btn btn-outline px-3 py-1.5 text-xs"
+                  >
+                    Open class
+                  </Link>
+                </div>
+              </div>
               <dl className="mb-5 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
                 <div className="flex gap-2">
                   <dt className="text-ink-400">Starts</dt>

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listMyEnrollments, listMyPayments } from "@/lib/data";
 import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import { updateProfile } from "@/app/actions/auth";
+import { StudentClassroom } from "@/components/StudentClassroom";
 import type { Batch, Course, EnrollmentStatus, PaymentStatus } from "@/lib/types";
 
 export const metadata: Metadata = { title: "My Learning", robots: { index: false } };
@@ -34,6 +35,19 @@ export default async function DashboardPage() {
     listMyEnrollments(user.id),
     listMyPayments(user.id),
   ]);
+
+  // Classes the student is actually attending drive the classroom section.
+  const activeEnrolments = enrollments.filter(
+    (row) => row.status === "active" || row.status === "completed",
+  );
+  const enrollmentIds = activeEnrolments.map((row) => row.id as string);
+  const batchIds = [
+    ...new Set(
+      activeEnrolments
+        .map((row) => row.batch_id as string | null)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
 
   const statusLabel: Record<EnrollmentStatus, string> = {
     pending_payment: t.dashboard.statusPendingPayment,
@@ -196,6 +210,11 @@ export default async function DashboardPage() {
               </table>
             </div>
           )}
+
+          <StudentClassroom
+            enrollmentIds={enrollmentIds}
+            batchIds={batchIds}
+          />
         </div>
 
         {/* ---------------- Profile ---------------- */}

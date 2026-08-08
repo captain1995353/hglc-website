@@ -6,6 +6,7 @@ import { getI18n, pick, pickList, type Dictionary } from "@/lib/i18n";
 import { formatDate, formatMoney } from "@/lib/format";
 import { getUser } from "@/lib/supabase/server";
 import { supabaseConfigured } from "@/lib/env";
+import { getAdmissionState } from "@/lib/admissions";
 import { enroll } from "@/app/actions/enroll";
 import type { Batch } from "@/lib/types";
 
@@ -40,6 +41,7 @@ export default async function CoursePage({
 
   const { locale, t } = await getI18n();
   const user = await getUser();
+  const admissions = await getAdmissionState();
 
   const outcomes = pickList(course, "outcomes", locale);
   const openBatches = course.batches.filter((b) => b.is_open);
@@ -109,6 +111,22 @@ export default async function CoursePage({
             {t.course.batchesTitle}
           </h2>
 
+          {admissions.open ? (
+            admissions.window && (
+              <p className="mt-2 text-sm text-brand-700">
+                <strong className="font-semibold">{admissions.window.title}</strong>{" "}
+                — enrolment closes {formatDate(admissions.window.closes_at, locale)}.
+                {admissions.window.note ? ` ${admissions.window.note}` : ""}
+              </p>
+            )
+          ) : (
+            <p className="mt-2 rounded-lg bg-paper-dim px-4 py-3 text-sm text-ink-600">
+              {admissions.upcoming
+                ? `Admissions are closed. The next intake opens ${formatDate(admissions.upcoming.opens_at, locale)}.`
+                : "Admissions are closed at the moment. Contact us and we will tell you when the next intake opens."}
+            </p>
+          )}
+
           {openBatches.length === 0 ? (
             <p className="card mt-4 p-6 text-sm text-ink-500">{t.course.noBatches}</p>
           ) : (
@@ -169,10 +187,14 @@ export default async function CoursePage({
                         <input type="hidden" name="slug" value={course.slug} />
                         <button
                           type="submit"
-                          disabled={full || !supabaseConfigured}
+                          disabled={full || !supabaseConfigured || !admissions.open}
                           className="btn btn-primary whitespace-nowrap"
                         >
-                          {user ? t.course.enrol : t.course.enrolLogin}
+                          {!admissions.open
+                            ? "Admissions closed"
+                            : user
+                              ? t.course.enrol
+                              : t.course.enrolLogin}
                         </button>
                       </form>
                     </div>

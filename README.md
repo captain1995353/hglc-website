@@ -26,9 +26,10 @@ instead of crashing.
 
 1. Create a project at [supabase.com](https://supabase.com) — the **Singapore**
    region is the closest to Dhaka.
-2. SQL Editor → run [`supabase/schema.sql`](supabase/schema.sql), then
-   [`supabase/seed.sql`](supabase/seed.sql), then
-   [`supabase/admin.sql`](supabase/admin.sql) (dashboard settings + stats).
+2. SQL Editor → run these in order:
+   [`schema.sql`](supabase/schema.sql) → [`seed.sql`](supabase/seed.sql) →
+   [`admin.sql`](supabase/admin.sql) → [`roles.sql`](supabase/roles.sql) →
+   [`classroom.sql`](supabase/classroom.sql).
 3. Project Settings → API: copy the project URL, the `anon` key and the
    `service_role` key into `.env.local`.
 4. Authentication → URL Configuration:
@@ -115,7 +116,51 @@ Safety rails worth knowing:
 Course and batch data still lives in the `courses` and `batches` tables if you
 prefer the Supabase table editor; the dashboard writes to exactly those rows.
 
-## 5. Deploy
+## 5. Roles and the classroom
+
+Three levels of dashboard access, chosen on the `/admin/login` tabs:
+
+| | Admin | Staff | Teacher |
+| --- | --- | --- | --- |
+| Courses, prices, batches, admissions | yes | — | — |
+| Students, enrolments, payments, messages | yes | yes | — |
+| Site settings, staff accounts | yes | — | — |
+| Own classes: attendance, assignments, groups, reports | yes | — | yes |
+
+Staff logins are created under **Staff & teachers** with a username rather than
+an email — `farhana` resolves to `farhana@hangeulglobal.com` internally. The
+same screen assigns which teacher runs which batch.
+
+### Admissions
+
+Students can only enrol while an admission window is open
+(**Admin → Admissions**). Outside a window the catalogue still shows every
+course, but the enrol button reads "Admissions closed" and the server action
+refuses the request as well, so a stale page cannot slip past it.
+
+### A teacher's class
+
+`/admin/classes` lists the batches assigned to them; opening one gives:
+
+- **Overview** — attendance rate, average score, and a per-student table
+- **Attendance** — one register per date. Everyone starts marked present, so
+  the teacher only changes the exceptions, then saves the class in one submit.
+- **Assignments** — set work with a due date and a mark out of N, keep it as a
+  draft or publish it, then grade each submission with written feedback. The
+  list of who has *not* handed in is shown alongside.
+- **Groups** — split the class into named groups for pair work or levels.
+- **Report** — live batch statistics plus a written summary. Saving a report
+  snapshots the numbers, so an old report keeps the figures it was written
+  with rather than silently changing later.
+
+### What a student sees
+
+**My Learning** grows a Classroom section: published assignments with a box to
+hand work in (text or a link), their mark and feedback once graded, their own
+attendance record with a percentage, and any group they belong to. Work can be
+revised until it is marked, and not after.
+
+## 6. Deploy
 
 Vercel is the least-effort host for this stack: import the repo, paste the same
 environment variables, set `NEXT_PUBLIC_SITE_URL` to the real domain, deploy.
@@ -158,6 +203,9 @@ supabase/
   schema.sql                      tables, RLS policies, triggers
   seed.sql                        five courses, two batches each
   admin.sql                       site_settings, admin policies, stats function
+  roles.sql                       student/teacher/staff/admin roles
+  classroom.sql                   admissions, attendance, assignments, groups,
+                                  reports
 ```
 
 ## Security notes

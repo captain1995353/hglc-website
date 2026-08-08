@@ -125,6 +125,8 @@ export function TextArea({
   defaultValue,
   hint,
   rows = 4,
+  placeholder,
+  required,
   className = "",
 }: {
   label: string;
@@ -132,17 +134,22 @@ export function TextArea({
   defaultValue?: string | null;
   hint?: string;
   rows?: number;
+  placeholder?: string;
+  required?: boolean;
   className?: string;
 }) {
   return (
     <div className={className}>
       <label className="field-label" htmlFor={name}>
         {label}
+        {required && <span className="ml-0.5 text-coral-500">*</span>}
       </label>
       <textarea
         id={name}
         name={name}
         rows={rows}
+        required={required}
+        placeholder={placeholder}
         defaultValue={defaultValue ?? ""}
         className="field-input resize-y"
       />
