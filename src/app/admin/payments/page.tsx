@@ -47,7 +47,7 @@ export default async function AdminPaymentsPage({
   const { data: pending } = await db
     .from("payments")
     .select(
-      "id, tran_id, provider_ref, sender_number, amount, currency, created_at, user_id, meta, receipt_path, enrollment:enrollments (id, course:courses (title_en))",
+      "id, tran_id, provider_ref, sender_number, amount, currency, created_at, user_id, meta, receipt_path, enrollment:enrollments (id, course:courses (title_en, price_bdt))",
     )
     .eq("status", "pending_review")
     .order("created_at", { ascending: true });
@@ -105,12 +105,22 @@ export default async function AdminPaymentsPage({
               Array.isArray(payment.enrollment)
                 ? payment.enrollment[0]
                 : payment.enrollment
-            ) as { course: { title_en: string } | { title_en: string }[] } | null;
+            ) as {
+              course:
+                | { title_en: string; price_bdt: number }
+                | { title_en: string; price_bdt: number }[];
+            } | null;
             const course = enrollment
               ? ((Array.isArray(enrollment.course)
                   ? enrollment.course[0]
-                  : enrollment.course) as { title_en: string } | null)
+                  : enrollment.course) as {
+                  title_en: string;
+                  price_bdt: number;
+                } | null)
               : null;
+            const fee = Number(course?.price_bdt ?? 0);
+            const paid = Number(payment.amount);
+            const shortfall = fee > 0 ? fee - paid : 0;
             const channel = String(
               (payment.meta as Record<string, unknown>)?.channel ?? "manual",
             );
@@ -153,7 +163,13 @@ export default async function AdminPaymentsPage({
                       <div className="flex gap-2">
                         <dt className="text-ink-400">Amount</dt>
                         <dd className="font-medium text-ink-800">
-                          {formatMoney(Number(payment.amount), payment.currency)}
+                          {formatMoney(paid, payment.currency)}
+                          {shortfall > 0 && (
+                            <span className="ml-2 text-coral-600">
+                              short by {formatMoney(shortfall, payment.currency)} of{" "}
+                              {formatMoney(fee, payment.currency)}
+                            </span>
+                          )}
                         </dd>
                       </div>
                       {payment.provider_ref && (

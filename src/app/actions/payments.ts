@@ -213,6 +213,15 @@ export async function submitManualPayment(formData: FormData) {
   const info = await loadEnrollment(enrollmentId);
   const admin = createAdminClient();
 
+  // What the student says they paid. It is a claim, not a fact — an admin
+  // checks it against the statement before this becomes money. Bounded so a
+  // typo or a tampered form cannot record an absurd figure.
+  const claimed = Number(String(formData.get("amount") ?? "").trim());
+  const amount =
+    Number.isFinite(claimed) && claimed > 0
+      ? Math.min(claimed, info.priceBdt * 10)
+      : info.priceBdt;
+
   // Upload the proof of transfer first — if it fails there is no half-made
   // payment row to clean up.
   let receiptPath: string | null = null;
@@ -251,7 +260,7 @@ export async function submitManualPayment(formData: FormData) {
     user_id: info.userId,
     provider: "manual",
     status: "pending_review",
-    amount: info.priceBdt,
+    amount,
     currency: "BDT",
     tran_id: tranId,
     provider_ref: trxId || null,

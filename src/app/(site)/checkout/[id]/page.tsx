@@ -89,9 +89,6 @@ export default async function CheckoutPage({
     bank: setting(settings, "bank_details", locale, manualPaymentAccounts.bank),
   };
   const paymentNote = setting(settings, "payment_note", locale, t.checkout.manualBody);
-  const hasAccounts = Boolean(accounts.bkash || accounts.nagad || accounts.bank);
-  const contactPhone = setting(settings, "contact_phone", locale, site.phone);
-  const contactEmail = setting(settings, "contact_email", locale, site.email);
   const address = setting(settings, "address", locale, site.address[locale]);
   const openingHours = setting(settings, "opening_hours", locale, site.hours[locale]);
 
@@ -217,22 +214,6 @@ export default async function CheckoutPage({
                     <p className="mt-1 text-xs text-ink-500">{openingHours}</p>
                   </div>
 
-                  {!hasAccounts ? (
-                    <p className="mt-4 rounded-lg bg-coral-50 px-4 py-3 text-sm text-coral-700">
-                      Our payment details are not listed here yet. Please call{" "}
-                      <a
-                        href={`tel:${contactPhone.replace(/\s/g, "")}`}
-                        className="font-semibold underline"
-                      >
-                        {contactPhone}
-                      </a>{" "}
-                      or email{" "}
-                      <a href={`mailto:${contactEmail}`} className="font-semibold underline">
-                        {contactEmail}
-                      </a>{" "}
-                      and we will tell you where to send the fee.
-                    </p>
-                  ) : (
                   <dl className="mt-4 grid gap-2 rounded-lg bg-paper-dim p-4 text-sm sm:grid-cols-2">
                     {accounts.bkash && (
                       <div>
@@ -265,10 +246,10 @@ export default async function CheckoutPage({
                       </div>
                     )}
                   </dl>
-                  )}
 
                   <ManualPaymentForm
                     enrollmentId={id}
+                    amountDue={priceBdt}
                     submitLabel={t.checkout.manualSubmit}
                   />
                 </section>

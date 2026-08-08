@@ -61,9 +61,12 @@ const CHANNELS: {
  */
 export function ManualPaymentForm({
   enrollmentId,
+  amountDue,
   submitLabel,
 }: {
   enrollmentId: string;
+  /** The course fee, prefilled so most students just leave it alone. */
+  amountDue: number;
   submitLabel: string;
 }) {
   const [channel, setChannel] = useState<Channel>("bkash");
@@ -97,6 +100,30 @@ export function ManualPaymentForm({
           ))}
         </div>
         <p className="mt-2 text-xs text-ink-500">{active.blurb}</p>
+      </div>
+
+      <div className={active.needsSender || active.needsReference ? "" : "sm:col-span-2"}>
+        <label className="field-label" htmlFor="amount">
+          How much did you pay?
+        </label>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400">
+            ৳
+          </span>
+          <input
+            id="amount"
+            name="amount"
+            type="number"
+            min="1"
+            step="1"
+            required
+            defaultValue={amountDue || ""}
+            className="field-input pl-7"
+          />
+        </div>
+        <p className="mt-1 text-xs text-ink-400">
+          Change it if you paid part of the fee.
+        </p>
       </div>
 
       {active.needsSender && (
