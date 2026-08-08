@@ -314,7 +314,17 @@ export default async function AdminPaymentsPage({
                   <StatusBadge status={row.status} />
                 </td>
                 <td className="px-5 py-3 font-mono text-xs text-ink-500">
-                  {row.provider_ref || row.tran_id}
+                  {row.status === "paid" ? (
+                    <Link
+                      href={`/invoice/${row.id}`}
+                      target="_blank"
+                      className="font-sans font-semibold text-brand-700 hover:underline"
+                    >
+                      Invoice
+                    </Link>
+                  ) : (
+                    row.provider_ref || row.tran_id
+                  )}
                 </td>
                 <td className="px-5 py-3 text-right">
                   {row.status === "paid" && (

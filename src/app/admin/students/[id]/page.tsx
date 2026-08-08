@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireOperations } from "@/app/actions/admin/guard";
+import { deleteStudent } from "@/app/actions/admin/delete-student";
 import { setEnrollmentStatus, setStudentAdmin, updateStudent } from "@/app/actions/admin/people";
 import {
   AdminHeader,
@@ -27,7 +28,7 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
-  const { db, user } = await requireOperations();
+  const { db, user, role } = await requireOperations();
   const { id } = await params;
   const { saved, error } = await searchParams;
 
@@ -69,6 +70,10 @@ export default async function StudentDetailPage({
         messages={{
           self_demote:
             "You cannot remove your own admin access — ask another admin to do it.",
+          self_delete: "You cannot delete your own account.",
+          password_required: "Enter your password to confirm the deletion.",
+          wrong_password: "That password is not right. Nothing was deleted.",
+          delete_failed: "The account could not be deleted. Please try again.",
         }}
       />
 
@@ -190,6 +195,62 @@ export default async function StudentDetailPage({
           </TableShell>
         )}
       </Panel>
+
+      {role === "admin" && student.id !== user.id && (
+        <Panel title="Delete this student">
+          <p className="text-sm leading-relaxed text-ink-600">
+            This removes {student.full_name || "this student"} and everything
+            attached to them, permanently:{" "}
+            <strong className="font-semibold text-ink-900">
+              {(enrolments ?? []).length} enrolment
+              {(enrolments ?? []).length === 1 ? "" : "s"}
+            </strong>
+            ,{" "}
+            <strong className="font-semibold text-ink-900">
+              {(payments ?? []).length} payment
+              {(payments ?? []).length === 1 ? "" : "s"}
+            </strong>
+            {paidTotal > 0 && (
+              <>
+                {" "}
+                totalling{" "}
+                <strong className="font-semibold text-ink-900">
+                  {formatMoney(paidTotal, "BDT")}
+                </strong>
+              </>
+            )}
+            , along with their attendance marks and any work they handed in.
+            It cannot be undone.
+          </p>
+
+          <p className="mt-3 text-sm text-ink-500">
+            If they have simply left, setting their enrolments to{" "}
+            <em>cancelled</em> keeps the financial record intact and is usually
+            the better choice.
+          </p>
+
+          <form action={deleteStudent} className="mt-5 flex flex-wrap items-end gap-3">
+            <input type="hidden" name="id" value={student.id} />
+            <div>
+              <label className="field-label" htmlFor="password">
+                Your password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                className="field-input"
+                placeholder="Confirm it is you"
+              />
+            </div>
+            <button type="submit" className="btn btn-accent">
+              Delete permanently
+            </button>
+          </form>
+        </Panel>
+      )}
     </>
   );
 }

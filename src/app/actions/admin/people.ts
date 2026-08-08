@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOperations, requireRole, str } from "./guard";
 import { settlePayment } from "@/lib/payments/settle";
+import { paymentApprovedEmail, refundEmail, sendMail } from "@/lib/mail";
+import { formatMoney } from "@/lib/format";
+import { siteUrl } from "@/lib/site";
 import type { EnrollmentStatus } from "@/lib/types";
 
 // ---------------------------------------------------------------------
@@ -125,19 +128,102 @@ export async function createEnrollment(form: FormData) {
 // Payments
 // ---------------------------------------------------------------------
 
-/** Confirms a manual transfer and activates the enrolment. */
+/**
+ * Confirms a manual transfer, activates the enrolment, issues an invoice
+ * number and emails the student their receipt.
+ *
+ * The email is best-effort: a mail server having a bad day must not leave a
+ * paid student un-enrolled, so a failure is logged and the approval stands.
+ */
 export async function approvePayment(form: FormData) {
   const { user, db } = await requireOperations();
   const tranId = str(form, "tran_id");
   if (!tranId) return;
 
-  await settlePayment({
+  const settled = await settlePayment({
     tranId,
     providerRef: str(form, "provider_ref") || null,
     meta: { source: "admin_review" },
   });
 
   await db.from("payments").update({ verified_by: user.id }).eq("tran_id", tranId);
+
+  if (settled.ok) {
+    const { data: payment } = await db
+      .from("payments")
+      .select(
+        "id, amount, currency, provider, meta, verified_at, user_id, enrollment:enrollments (course:courses (title_en), batch:batches (name))",
+      )
+      .eq("tran_id", tranId)
+      .maybeSingle();
+
+    if (payment) {
+      const { data: invoiceNo } = await db.rpc("assign_invoice_no", {
+        payment: payment.id,
+      });
+
+      const [{ data: profile }, { data: account }] = await Promise.all([
+        db.from("profiles").select("full_name").eq("id", payment.user_id).maybeSingle(),
+        db.auth.admin.getUserById(payment.user_id),
+      ]);
+
+      const enrollment = (
+        Array.isArray(payment.enrollment) ? payment.enrollment[0] : payment.enrollment
+      ) as {
+        course: { title_en: string } | { title_en: string }[];
+        batch: { name: string } | { name: string }[] | null;
+      } | null;
+
+      const course = enrollment
+        ? ((Array.isArray(enrollment.course)
+            ? enrollment.course[0]
+            : enrollment.course) as { title_en: string } | null)
+        : null;
+      const batch = enrollment
+        ? ((Array.isArray(enrollment.batch)
+            ? enrollment.batch[0]
+            : enrollment.batch) as { name: string } | null)
+        : null;
+
+      const channel = String((payment.meta as Record<string, unknown>)?.channel ?? "");
+      const method =
+        payment.provider === "manual"
+          ? channel === "cash"
+            ? "Cash at the centre"
+            : channel === "bank"
+              ? "Bank transfer"
+              : channel
+                ? channel.charAt(0).toUpperCase() + channel.slice(1)
+                : "Manual transfer"
+          : payment.provider === "sslcommerz"
+            ? "SSLCommerz"
+            : "Card";
+
+      const to = account?.user?.email ?? "";
+
+      if (to) {
+        await sendMail({
+          to,
+          subject: `Payment confirmed — ${course?.title_en ?? "your course"}`,
+          kind: "payment_approved",
+          paymentId: payment.id,
+          html: paymentApprovedEmail({
+            name: profile?.full_name ?? "",
+            invoiceNo: String(invoiceNo ?? ""),
+            course: course?.title_en ?? "Course enrolment",
+            batch: batch?.name ?? "—",
+            amount: formatMoney(Number(payment.amount), payment.currency),
+            method,
+            paidOn: new Date(payment.verified_at ?? Date.now()).toLocaleDateString(
+              "en-GB",
+              { year: "numeric", month: "short", day: "numeric" },
+            ),
+            invoiceUrl: `${siteUrl}/invoice/${payment.id}`,
+          }),
+        });
+      }
+    }
+  }
 
   revalidatePath("/admin");
   revalidatePath("/admin/payments");
@@ -200,6 +286,48 @@ export async function refundPayment(form: FormData) {
     .from("enrollments")
     .update({ status: "cancelled" })
     .eq("id", payment.enrollment_id);
+
+  // Tell the student their money is coming back.
+  const { data: full } = await db
+    .from("payments")
+    .select(
+      "id, amount, currency, invoice_no, user_id, enrollment:enrollments (course:courses (title_en))",
+    )
+    .eq("id", payment.id)
+    .maybeSingle();
+
+  if (full) {
+    const [{ data: profile }, { data: account }] = await Promise.all([
+      db.from("profiles").select("full_name").eq("id", full.user_id).maybeSingle(),
+      db.auth.admin.getUserById(full.user_id),
+    ]);
+
+    const enrollment = (
+      Array.isArray(full.enrollment) ? full.enrollment[0] : full.enrollment
+    ) as { course: { title_en: string } | { title_en: string }[] } | null;
+    const course = enrollment
+      ? ((Array.isArray(enrollment.course)
+          ? enrollment.course[0]
+          : enrollment.course) as { title_en: string } | null)
+      : null;
+
+    const to = account?.user?.email ?? "";
+
+    if (to) {
+      await sendMail({
+        to,
+        subject: `Refund issued — ${course?.title_en ?? "your course"}`,
+        kind: "payment_refunded",
+        paymentId: full.id,
+        html: refundEmail({
+          name: profile?.full_name ?? "",
+          invoiceNo: full.invoice_no ?? "—",
+          course: course?.title_en ?? "your course",
+          amount: formatMoney(Number(full.amount), full.currency),
+        }),
+      });
+    }
+  }
 
   revalidatePath("/admin/payments");
   revalidatePath("/admin");

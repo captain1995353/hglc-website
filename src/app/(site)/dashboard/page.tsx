@@ -202,7 +202,16 @@ export default async function DashboardPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3 font-mono text-xs text-ink-500">
-                        {payment.provider_ref || payment.tran_id}
+                        {payment.status === "paid" ? (
+                          <Link
+                            href={`/invoice/${payment.id}`}
+                            className="font-sans font-semibold text-brand-700 hover:underline"
+                          >
+                            View invoice
+                          </Link>
+                        ) : (
+                          payment.provider_ref || payment.tran_id
+                        )}
                       </td>
                     </tr>
                   ))}
