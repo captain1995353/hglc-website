@@ -147,10 +147,13 @@ export function paymentApprovedEmail(details: {
     </table>
 
     <p style="margin:24px 0 0">
-      <a href="${details.invoiceUrl}"
+      <a href="${details.invoiceUrl}/pdf"
          style="background:#414b96;color:#fff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:bold;font-size:14px;display:inline-block">
-        View or print your invoice
+        Download your invoice (PDF)
       </a>
+    </p>
+    <p style="margin:12px 0 0;font-size:13px">
+      <a href="${details.invoiceUrl}" style="color:#414b96">Or view it in your browser</a>
     </p>
     `,
   );

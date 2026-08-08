@@ -107,9 +107,12 @@ export default async function InvoicePage({
   return (
     <div className="container-page py-10 print:py-0">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-5 flex justify-end gap-3 print:hidden">
-          <a href="/dashboard" className="btn btn-outline">
+        <div className="mb-5 flex flex-wrap justify-end gap-3 print:hidden">
+          <a href="/dashboard" className="btn btn-ghost">
             Back to My Learning
+          </a>
+          <a href={`/invoice/${paymentId}/pdf`} className="btn btn-primary">
+            Download PDF
           </a>
         </div>
 
