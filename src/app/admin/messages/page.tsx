@@ -1,10 +1,10 @@
-import { requireAdmin } from "@/app/actions/admin/guard";
+import { requireOperations } from "@/app/actions/admin/guard";
 import { deleteMessage, setMessageHandled } from "@/app/actions/admin/people";
 import { AdminHeader, EmptyState } from "@/components/admin/ui";
 import { formatDateTime } from "@/lib/format";
 
 export default async function AdminMessagesPage() {
-  const { db } = await requireAdmin();
+  const { db } = await requireOperations();
 
   const { data: messages } = await db
     .from("contact_messages")

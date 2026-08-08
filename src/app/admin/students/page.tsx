@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/app/actions/admin/guard";
+import { requireOperations } from "@/app/actions/admin/guard";
 import {
   AdminHeader,
   EmptyState,
@@ -13,7 +13,7 @@ export default async function AdminStudentsPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const { db } = await requireAdmin();
+  const { db } = await requireOperations();
   const { q } = await searchParams;
   const search = (q ?? "").trim();
 

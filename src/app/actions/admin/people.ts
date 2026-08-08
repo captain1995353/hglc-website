@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin, str } from "./guard";
+import { requireOperations, requireRole, str } from "./guard";
 import { settlePayment } from "@/lib/payments/settle";
 import type { EnrollmentStatus } from "@/lib/types";
 
@@ -11,7 +11,7 @@ import type { EnrollmentStatus } from "@/lib/types";
 // ---------------------------------------------------------------------
 
 export async function updateStudent(form: FormData) {
-  const { db } = await requireAdmin();
+  const { db } = await requireOperations();
   const id = str(form, "id");
   if (!id) redirect("/admin/students");
 
@@ -28,11 +28,15 @@ export async function updateStudent(form: FormData) {
 }
 
 /**
- * Grants or removes dashboard access. An admin cannot remove their own
- * flag — that is the one way to lock everybody out of the dashboard.
+ * Promotes a student to administrator, or demotes them back. Only admins may
+ * do this, and never to their own account — that is the one change that can
+ * lock everybody out of the dashboard.
+ *
+ * The `role` column is what the guard reads; `is_admin` is kept in step by a
+ * database trigger, so writing the role is enough.
  */
 export async function setStudentAdmin(form: FormData) {
-  const { db, user } = await requireAdmin();
+  const { db, user } = await requireRole(["admin"]);
   const id = str(form, "id");
   const next = str(form, "is_admin") === "true";
 
@@ -41,7 +45,10 @@ export async function setStudentAdmin(form: FormData) {
     redirect(`/admin/students/${id}?error=self_demote`);
   }
 
-  await db.from("profiles").update({ is_admin: next }).eq("id", id);
+  await db
+    .from("profiles")
+    .update({ role: next ? "admin" : "student" })
+    .eq("id", id);
 
   revalidatePath("/admin/students");
   revalidatePath(`/admin/students/${id}`);
@@ -59,7 +66,7 @@ const ENROLMENT_STATUSES: EnrollmentStatus[] = [
 ];
 
 export async function setEnrollmentStatus(form: FormData) {
-  const { db } = await requireAdmin();
+  const { db } = await requireOperations();
   const id = str(form, "id");
   const next = str(form, "status") as EnrollmentStatus;
 
@@ -72,7 +79,7 @@ export async function setEnrollmentStatus(form: FormData) {
 }
 
 export async function updateEnrollmentNote(form: FormData) {
-  const { db } = await requireAdmin();
+  const { db } = await requireOperations();
   const id = str(form, "id");
   if (!id) return;
 
@@ -82,7 +89,7 @@ export async function updateEnrollmentNote(form: FormData) {
 
 /** Enrols a student by hand — for walk-ins who paid at the desk. */
 export async function createEnrollment(form: FormData) {
-  const { db } = await requireAdmin();
+  const { db } = await requireOperations();
   const userId = str(form, "user_id");
   const batchId = str(form, "batch_id");
   const status = str(form, "status") as EnrollmentStatus;
@@ -120,7 +127,7 @@ export async function createEnrollment(form: FormData) {
 
 /** Confirms a manual transfer and activates the enrolment. */
 export async function approvePayment(form: FormData) {
-  const { user, db } = await requireAdmin();
+  const { user, db } = await requireOperations();
   const tranId = str(form, "tran_id");
   if (!tranId) return;
 
@@ -137,7 +144,7 @@ export async function approvePayment(form: FormData) {
 }
 
 export async function rejectPayment(form: FormData) {
-  const { user, db } = await requireAdmin();
+  const { user, db } = await requireOperations();
   const tranId = str(form, "tran_id");
   if (!tranId) return;
 
@@ -168,7 +175,7 @@ export async function rejectPayment(form: FormData) {
 
 /** Marks a paid payment refunded and cancels its enrolment. */
 export async function refundPayment(form: FormData) {
-  const { user, db } = await requireAdmin();
+  const { user, db } = await requireOperations();
   const tranId = str(form, "tran_id");
   if (!tranId) return;
 
@@ -200,7 +207,7 @@ export async function refundPayment(form: FormData) {
 
 /** Records a fee taken in cash at the centre. */
 export async function recordOfflinePayment(form: FormData) {
-  const { user, db } = await requireAdmin();
+  const { user, db } = await requireOperations();
   const enrollmentId = str(form, "enrollment_id");
   const reference = str(form, "reference") || `CASH-${Date.now().toString(36).toUpperCase()}`;
 
@@ -244,7 +251,7 @@ export async function recordOfflinePayment(form: FormData) {
 // ---------------------------------------------------------------------
 
 export async function setMessageHandled(form: FormData) {
-  const { db } = await requireAdmin();
+  const { db } = await requireOperations();
   const id = str(form, "id");
   const handled = str(form, "handled") === "true";
 
@@ -256,7 +263,7 @@ export async function setMessageHandled(form: FormData) {
 }
 
 export async function deleteMessage(form: FormData) {
-  const { db } = await requireAdmin();
+  const { db } = await requireOperations();
   const id = str(form, "id");
   if (!id) return;
 

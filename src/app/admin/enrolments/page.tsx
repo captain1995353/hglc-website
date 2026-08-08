@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/app/actions/admin/guard";
+import { requireOperations } from "@/app/actions/admin/guard";
 import {
   createEnrollment,
   recordOfflinePayment,
@@ -36,7 +36,7 @@ export default async function AdminEnrolmentsPage({
 }: {
   searchParams: Promise<{ status?: string; created?: string; error?: string }>;
 }) {
-  const { db } = await requireAdmin();
+  const { db } = await requireOperations();
   const { status, created, error } = await searchParams;
   const active = STATUSES.includes(status as EnrollmentStatus) ? status : "all";
 

@@ -5,11 +5,27 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured } from "@/lib/env";
 
+export type Role = "student" | "teacher" | "staff" | "admin";
+
+/** Everyone who may open the dashboard at all. */
+export const DASHBOARD_ROLES: Role[] = ["teacher", "staff", "admin"];
+
+/** Admin and front-desk staff — the people who run day-to-day operations. */
+export const OPERATIONS_ROLES: Role[] = ["staff", "admin"];
+
+export const ROLE_LABELS: Record<Role, string> = {
+  student: "Student",
+  teacher: "Teacher",
+  staff: "Staff",
+  admin: "Administrator",
+};
+
 /**
- * Every admin action starts here. Returns the signed-in admin plus a
- * service-role client; anyone else is redirected out before a query runs.
+ * Gate for every dashboard page and action. Returns the signed-in person,
+ * their role, and a service-role client. Anyone without one of `allowed` is
+ * redirected before a query runs.
  */
-export async function requireAdmin() {
+export async function requireRole(allowed: Role[] = DASHBOARD_ROLES) {
   if (!supabaseConfigured) redirect("/");
 
   const supabase = await createClient();
@@ -20,14 +36,36 @@ export async function requireAdmin() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin, full_name")
+    .select("role, is_admin, full_name")
     .eq("id", user.id)
     .maybeSingle();
 
-  // Signed in, but as a student — send them to their own dashboard.
-  if (!profile?.is_admin) redirect("/dashboard");
+  // `role` arrives only after roles.sql has been applied; fall back to the
+  // older is_admin flag so the dashboard keeps working either way.
+  const role: Role =
+    (profile?.role as Role | undefined) ?? (profile?.is_admin ? "admin" : "student");
 
-  return { user, profile, db: createAdminClient() };
+  if (!allowed.includes(role)) {
+    // Signed in, but not for this area.
+    redirect(role === "student" ? "/dashboard" : "/admin");
+  }
+
+  return {
+    user,
+    role,
+    profile: { full_name: profile?.full_name ?? "", role },
+    db: createAdminClient(),
+  };
+}
+
+/** Shorthand for the admin-only screens. */
+export async function requireAdmin() {
+  return requireRole(["admin"]);
+}
+
+/** Shorthand for screens staff share with admins. */
+export async function requireOperations() {
+  return requireRole(OPERATIONS_ROLES);
 }
 
 /** Form helpers — forms only ever hand us strings. */

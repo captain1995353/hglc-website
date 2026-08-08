@@ -3,21 +3,19 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { usernameToEmail } from "@/lib/staff-usernames";
 
-/**
- * Staff sign in with a short username. Supabase authenticates by email, so an
- * entry without "@" is resolved against the centre's domain — `admin` becomes
- * admin@hangeulglobal.com.
- */
-const STAFF_DOMAIN = "hangeulglobal.com";
+type Choice = "admin" | "teacher" | "staff";
 
-function toEmail(identifier: string) {
-  const value = identifier.trim();
-  return value.includes("@") ? value : `${value.toLowerCase()}@${STAFF_DOMAIN}`;
-}
+const TABS: { value: Choice; label: string; blurb: string }[] = [
+  { value: "admin", label: "Admin", blurb: "Full access to the centre." },
+  { value: "teacher", label: "Teacher", blurb: "Your classes and student lists." },
+  { value: "staff", label: "Staff", blurb: "Enrolments, payments and enquiries." },
+];
 
 export function AdminLoginForm({ next }: { next: string }) {
   const router = useRouter();
+  const [choice, setChoice] = useState<Choice>("admin");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +28,7 @@ export function AdminLoginForm({ next }: { next: string }) {
 
     const supabase = createClient();
     const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: toEmail(username),
+      email: usernameToEmail(username),
       password,
     });
 
@@ -40,17 +38,29 @@ export function AdminLoginForm({ next }: { next: string }) {
       return;
     }
 
-    // A student who finds this page gets signed straight back out rather than
-    // being bounced around by the dashboard guard.
     const { data: profile } = await supabase
       .from("profiles")
-      .select("is_admin")
+      .select("role, is_admin")
       .eq("id", data.user.id)
       .maybeSingle();
 
-    if (!profile?.is_admin) {
+    const role =
+      (profile?.role as Choice | "student" | undefined) ??
+      (profile?.is_admin ? "admin" : "student");
+
+    // Signing out again is friendlier than letting the dashboard guard bounce
+    // someone around after they thought they were in.
+    if (role === "student") {
       await supabase.auth.signOut();
       setError("That account does not have dashboard access.");
+      setBusy(false);
+      return;
+    }
+
+    if (role !== choice) {
+      await supabase.auth.signOut();
+      const actual = TABS.find((tab) => tab.value === role)?.label ?? role;
+      setError(`That is a ${actual} account — choose ${actual} above.`);
       setBusy(false);
       return;
     }
@@ -60,7 +70,41 @@ export function AdminLoginForm({ next }: { next: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-5">
+      <div>
+        <div
+          role="tablist"
+          aria-label="Account type"
+          className="grid grid-cols-3 gap-1 rounded-xl bg-white/5 p-1"
+        >
+          {TABS.map((tab) => {
+            const active = tab.value === choice;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => {
+                  setChoice(tab.value);
+                  setError(null);
+                }}
+                className={`rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${
+                  active
+                    ? "bg-white text-ink-900"
+                    : "text-ink-300 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2 text-center text-xs text-ink-400">
+          {TABS.find((tab) => tab.value === choice)?.blurb}
+        </p>
+      </div>
+
       {error && (
         <p className="rounded-lg bg-coral-500/15 px-4 py-3 text-sm text-coral-200">
           {error}
@@ -80,7 +124,7 @@ export function AdminLoginForm({ next }: { next: string }) {
           required
           autoComplete="username"
           autoFocus
-          placeholder="admin"
+          placeholder={choice}
           className="w-full rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 text-white placeholder:text-ink-400 focus:border-brand-400 focus:outline-none"
           value={username}
           onChange={(e) => setUsername(e.target.value)}

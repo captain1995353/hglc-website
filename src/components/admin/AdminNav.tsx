@@ -2,23 +2,40 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { Role } from "@/app/actions/admin/guard";
 
-const LINKS = [
-  { href: "/admin", label: "Overview", exact: true },
-  { href: "/admin/courses", label: "Courses & batches" },
-  { href: "/admin/students", label: "Students" },
-  { href: "/admin/enrolments", label: "Enrolments" },
-  { href: "/admin/payments", label: "Payments" },
-  { href: "/admin/messages", label: "Messages" },
-  { href: "/admin/settings", label: "Site settings" },
+type NavItem = {
+  href: string;
+  label: string;
+  roles: Role[];
+  exact?: boolean;
+};
+
+const LINKS: NavItem[] = [
+  { href: "/admin", label: "Overview", roles: ["admin", "staff"], exact: true },
+  { href: "/admin/classes", label: "My classes", roles: ["teacher", "admin"] },
+  { href: "/admin/courses", label: "Courses & batches", roles: ["admin"] },
+  { href: "/admin/students", label: "Students", roles: ["admin", "staff"] },
+  { href: "/admin/enrolments", label: "Enrolments", roles: ["admin", "staff"] },
+  { href: "/admin/payments", label: "Payments", roles: ["admin", "staff"] },
+  { href: "/admin/messages", label: "Messages", roles: ["admin", "staff"] },
+  { href: "/admin/staff", label: "Staff & teachers", roles: ["admin"] },
+  { href: "/admin/settings", label: "Site settings", roles: ["admin"] },
 ];
 
-export function AdminNav({ badges }: { badges: Record<string, number> }) {
+export function AdminNav({
+  role,
+  badges,
+}: {
+  role: Role;
+  badges: Record<string, number>;
+}) {
   const pathname = usePathname();
+  const visible = LINKS.filter((link) => link.roles.includes(role));
 
   return (
     <nav className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-      {LINKS.map((link) => {
+      {visible.map((link) => {
         const active = link.exact
           ? pathname === link.href
           : pathname.startsWith(link.href);

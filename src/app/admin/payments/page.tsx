@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/app/actions/admin/guard";
+import { requireOperations } from "@/app/actions/admin/guard";
 import {
   approvePayment,
   refundPayment,
@@ -38,7 +38,7 @@ export default async function AdminPaymentsPage({
 }: {
   searchParams: Promise<{ status?: string; recorded?: string }>;
 }) {
-  const { db } = await requireAdmin();
+  const { db } = await requireOperations();
   const { status, recorded } = await searchParams;
   const active = VALID.includes(status as PaymentStatus) ? status! : "all";
 

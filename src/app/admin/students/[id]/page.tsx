@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/app/actions/admin/guard";
+import { requireOperations } from "@/app/actions/admin/guard";
 import { setEnrollmentStatus, setStudentAdmin, updateStudent } from "@/app/actions/admin/people";
 import {
   AdminHeader,
@@ -27,7 +27,7 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
-  const { db, user } = await requireAdmin();
+  const { db, user } = await requireOperations();
   const { id } = await params;
   const { saved, error } = await searchParams;
 

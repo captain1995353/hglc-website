@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireAdmin } from "@/app/actions/admin/guard";
+import { redirect } from "next/navigation";
+import { requireRole } from "@/app/actions/admin/guard";
 import { AdminHeader, Panel, StatusBadge, TableShell } from "@/components/admin/ui";
 import { formatDateTime, formatMoney } from "@/lib/format";
 
@@ -30,7 +31,12 @@ const EMPTY_STATS: Stats = {
 };
 
 export default async function AdminOverviewPage() {
-  const { db } = await requireAdmin();
+  const { db, role } = await requireRole();
+
+  // Teachers have no business on the money screens; their landing page is
+  // their own class list. Redirecting here rather than in requireRole keeps
+  // the guard from bouncing them back to /admin in a loop.
+  if (role === "teacher") redirect("/admin/classes");
 
   const { data: statsData } = await db.rpc("admin_stats");
   const stats: Stats = { ...EMPTY_STATS, ...((statsData as Stats) ?? {}) };
@@ -72,7 +78,11 @@ export default async function AdminOverviewPage() {
     <>
       <AdminHeader
         title="Overview"
-        subtitle="Everything on the site is managed from here."
+        subtitle={
+          role === "admin"
+            ? "Everything on the site is managed from here."
+            : "Enrolments, payments and enquiries."
+        }
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
