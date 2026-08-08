@@ -4,9 +4,9 @@ import {
   createStaffAccount,
   deleteStaffAccount,
   resetStaffPassword,
-  setStaffRole,
 } from "@/app/actions/admin/staff";
 import { emailToUsername } from "@/lib/staff-usernames";
+import { RoleSelect } from "@/components/admin/RoleSelect";
 import {
   AdminHeader,
   EmptyState,
@@ -41,7 +41,7 @@ export default async function StaffPage({
     .from("profiles")
     .select("id, full_name, phone, role, created_at")
     .in("role", ["teacher", "staff", "admin"])
-    .order("role", { ascending: true })
+    .order("role", { ascending: false })
     .order("full_name", { ascending: true });
 
   // Usernames live on the auth record, not the profile.
@@ -109,29 +109,12 @@ export default async function StaffPage({
                 </td>
                 <td className="px-5 py-3 font-mono text-sm text-ink-600">{username}</td>
                 <td className="px-5 py-3">
-                  <form action={setStaffRole} className="flex items-center gap-2">
-                    <input type="hidden" name="id" value={person.id} />
-                    <select
-                      name="role"
-                      defaultValue={person.role}
-                      disabled={isSelf}
-                      className="field-input py-1.5 text-xs disabled:opacity-50"
-                    >
-                      {ROLE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                      <option value="student">Student (no access)</option>
-                    </select>
-                    <button
-                      type="submit"
-                      disabled={isSelf}
-                      className="btn btn-outline px-3 py-1.5 text-xs disabled:opacity-50"
-                    >
-                      Set
-                    </button>
-                  </form>
+                  <RoleSelect
+                    id={person.id}
+                    name={person.full_name || username}
+                    role={person.role}
+                    disabled={isSelf}
+                  />
                 </td>
                 <td className="px-5 py-3 text-ink-500">
                   {formatDate(person.created_at)}
@@ -147,8 +130,11 @@ export default async function StaffPage({
                       placeholder="New password"
                       className="field-input py-1.5 text-xs"
                     />
-                    <button type="submit" className="btn btn-outline px-3 py-1.5 text-xs">
-                      Set
+                    <button
+                      type="submit"
+                      className="btn btn-outline px-3 py-1.5 text-xs"
+                    >
+                      Reset
                     </button>
                   </form>
                 </td>
