@@ -16,7 +16,7 @@ export async function requireAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login?next=/admin");
+  if (!user) redirect("/admin/login");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -24,6 +24,7 @@ export async function requireAdmin() {
     .eq("id", user.id)
     .maybeSingle();
 
+  // Signed in, but as a student — send them to their own dashboard.
   if (!profile?.is_admin) redirect("/dashboard");
 
   return { user, profile, db: createAdminClient() };

@@ -6,19 +6,6 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Dictionary } from "@/lib/i18n";
 
-/**
- * Staff accounts sign in with a short name rather than an address, so an
- * entry with no "@" is resolved against the centre's own domain: `admin`
- * becomes `admin@hangeulglobal.com`. Students type their real email and are
- * unaffected.
- */
-const STAFF_DOMAIN = "hangeulglobal.com";
-
-function toEmail(identifier: string) {
-  const value = identifier.trim();
-  return value.includes("@") ? value : `${value.toLowerCase()}@${STAFF_DOMAIN}`;
-}
-
 export function LoginForm({ t, next }: { t: Dictionary; next: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -33,7 +20,7 @@ export function LoginForm({ t, next }: { t: Dictionary; next: string }) {
 
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email: toEmail(email),
+      email: email.trim(),
       password,
     });
 
@@ -55,13 +42,13 @@ export function LoginForm({ t, next }: { t: Dictionary; next: string }) {
 
       <div>
         <label className="field-label" htmlFor="email">
-          {t.auth.identifier}
+          {t.auth.email}
         </label>
         <input
           id="email"
-          type="text"
+          type="email"
           required
-          autoComplete="username"
+          autoComplete="email"
           className="field-input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}

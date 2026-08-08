@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/checkout") ||
       path.startsWith("/admin");
 
+
     if (needsAccount) {
       const home = request.nextUrl.clone();
       home.pathname = "/";
@@ -50,14 +51,18 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+  const isStaffArea = path.startsWith("/admin");
+  const isStaffLogin = path === "/admin/login";
+
   const isPrivate =
     path.startsWith("/dashboard") ||
     path.startsWith("/checkout") ||
-    path.startsWith("/admin");
+    (isStaffArea && !isStaffLogin);
 
   if (isPrivate && !user) {
     const login = request.nextUrl.clone();
-    login.pathname = "/login";
+    // Staff get their own sign-in screen; students get theirs.
+    login.pathname = isStaffArea ? "/admin/login" : "/login";
     login.searchParams.set("next", path + request.nextUrl.search);
     return NextResponse.redirect(login);
   }
