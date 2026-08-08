@@ -14,6 +14,7 @@ import {
   TableShell,
 } from "@/components/admin/ui";
 import { formatDateTime, formatMoney } from "@/lib/format";
+import { ReceiptLink } from "@/components/admin/ReceiptLink";
 import type { PaymentStatus } from "@/lib/types";
 
 const FILTERS = [
@@ -46,7 +47,7 @@ export default async function AdminPaymentsPage({
   const { data: pending } = await db
     .from("payments")
     .select(
-      "id, tran_id, provider_ref, sender_number, amount, currency, created_at, user_id, meta, enrollment:enrollments (id, course:courses (title_en))",
+      "id, tran_id, provider_ref, sender_number, amount, currency, created_at, user_id, meta, receipt_path, enrollment:enrollments (id, course:courses (title_en))",
     )
     .eq("status", "pending_review")
     .order("created_at", { ascending: true });
@@ -168,6 +169,18 @@ export default async function AdminPaymentsPage({
                         </div>
                       )}
                     </dl>
+
+                    <div className="mt-4">
+                      <p className="mb-2 text-xs uppercase tracking-wide text-ink-400">
+                        Receipt
+                      </p>
+                      <ReceiptLink
+                        path={
+                          (payment as { receipt_path?: string | null }).receipt_path ??
+                          null
+                        }
+                      />
+                    </div>
 
                     <p className="mt-3 text-xs text-ink-400">
                       Check the TrxID against your bKash/Nagad statement before

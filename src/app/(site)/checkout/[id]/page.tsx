@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { getI18n, pick } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatMoney } from "@/lib/format";
-import { manualPaymentAccounts } from "@/lib/site";
+import { manualPaymentAccounts, site } from "@/lib/site";
 import { getSettings, setting } from "@/lib/settings";
 import { stripeEnabled } from "@/lib/payments/stripe";
 import { sslcommerzConfigured } from "@/lib/env";
@@ -80,6 +80,8 @@ export default async function CheckoutPage({
   const priceBdt = Number(course.price_bdt);
   const priceUsd = Number(course.price_usd);
   const sslConfigured = sslcommerzConfigured;
+  // Stripe is pointless without a dollar price to charge.
+  const stripeReady = stripeEnabled() && priceUsd > 0;
 
   // Payment account numbers are managed from the dashboard; the env vars
   // stay as a fallback for a fresh install.
@@ -90,6 +92,9 @@ export default async function CheckoutPage({
     bank: setting(settings, "bank_details", locale, manualPaymentAccounts.bank),
   };
   const paymentNote = setting(settings, "payment_note", locale, t.checkout.manualBody);
+  const hasAccounts = Boolean(accounts.bkash || accounts.nagad || accounts.bank);
+  const contactPhone = setting(settings, "contact_phone", locale, site.phone);
+  const contactEmail = setting(settings, "contact_email", locale, site.email);
 
   return (
     <div className="container-page py-12 sm:py-16">
@@ -99,7 +104,15 @@ export default async function CheckoutPage({
         <p className="mt-5 rounded-lg bg-coral-50 px-4 py-3 text-sm text-coral-700">
           {error === "duplicate_trx"
             ? "That transaction ID has already been submitted."
-            : t.common.error}
+            : error === "receipt_type"
+              ? "The receipt has to be an image or a PDF."
+              : error === "receipt_size"
+                ? "That file is larger than 5 MB — try a screenshot instead."
+                : error === "receipt_failed"
+                  ? "The receipt could not be uploaded. Try again, or submit without it."
+                  : error === "missing"
+                    ? "Enter the transaction ID and the number you sent from."
+                    : t.common.error}
         </p>
       )}
 
@@ -124,11 +137,15 @@ export default async function CheckoutPage({
           ) : (
             <>
               <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-ink-400">
-                {t.checkout.chooseMethod}
+                {sslConfigured || stripeReady
+                  ? t.checkout.chooseMethod
+                  : "How to pay"}
               </h2>
 
               <div className="mt-4 space-y-4">
-                {/* --- SSLCommerz --- */}
+                {/* --- SSLCommerz. Hidden entirely until credentials exist:
+                     a student has no use for our configuration state. --- */}
+                {sslConfigured && (
                 <section className="card p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="max-w-md">
@@ -150,21 +167,17 @@ export default async function CheckoutPage({
                       <input type="hidden" name="enrollment_id" value={id} />
                       <button
                         type="submit"
-                        disabled={!sslConfigured}
                         className="btn btn-primary whitespace-nowrap"
                       >
                         {t.checkout.sslButton} {formatMoney(priceBdt, "BDT", locale)}
                       </button>
                     </form>
                   </div>
-                  {!sslConfigured && (
-                    <p className="mt-3 text-xs text-coral-500">
-                      SSLCommerz credentials are not configured yet.
-                    </p>
-                  )}
                 </section>
+                )}
 
-                {/* --- Stripe --- */}
+                {/* --- Stripe. Also needs a USD price to be worth showing. --- */}
+                {stripeReady && (
                 <section className="card p-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="max-w-md">
@@ -179,19 +192,14 @@ export default async function CheckoutPage({
                       <input type="hidden" name="enrollment_id" value={id} />
                       <button
                         type="submit"
-                        disabled={!stripeEnabled()}
                         className="btn btn-outline whitespace-nowrap"
                       >
                         {t.checkout.stripeButton} {formatMoney(priceUsd, "USD", locale)}
                       </button>
                     </form>
                   </div>
-                  {!stripeEnabled() && (
-                    <p className="mt-3 text-xs text-coral-500">
-                      Stripe is not configured yet.
-                    </p>
-                  )}
                 </section>
+                )}
 
                 {/* --- Manual transfer --- */}
                 <section className="card p-6">
@@ -202,6 +210,22 @@ export default async function CheckoutPage({
                     {paymentNote}
                   </p>
 
+                  {!hasAccounts ? (
+                    <p className="mt-4 rounded-lg bg-coral-50 px-4 py-3 text-sm text-coral-700">
+                      Our payment details are not listed here yet. Please call{" "}
+                      <a
+                        href={`tel:${contactPhone.replace(/\s/g, "")}`}
+                        className="font-semibold underline"
+                      >
+                        {contactPhone}
+                      </a>{" "}
+                      or email{" "}
+                      <a href={`mailto:${contactEmail}`} className="font-semibold underline">
+                        {contactEmail}
+                      </a>{" "}
+                      and we will tell you where to send the fee.
+                    </p>
+                  ) : (
                   <dl className="mt-4 grid gap-2 rounded-lg bg-paper-dim p-4 text-sm sm:grid-cols-2">
                     {accounts.bkash && (
                       <div>
@@ -234,8 +258,13 @@ export default async function CheckoutPage({
                       </div>
                     )}
                   </dl>
+                  )}
 
-                  <form action={submitManualPayment} className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <form
+                    action={submitManualPayment}
+                    encType="multipart/form-data"
+                    className="mt-5 grid gap-4 sm:grid-cols-2"
+                  >
                     <input type="hidden" name="enrollment_id" value={id} />
 
                     <div>
@@ -278,9 +307,30 @@ export default async function CheckoutPage({
                     </div>
 
                     <div className="sm:col-span-2">
-                      <button type="submit" className="btn btn-outline">
+                      <label className="field-label" htmlFor="receipt">
+                        Receipt or screenshot
+                      </label>
+                      <input
+                        id="receipt"
+                        name="receipt"
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="field-input file:mr-3 file:rounded-md file:border-0 file:bg-ink-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-ink-700"
+                      />
+                      <p className="mt-1 text-xs text-ink-400">
+                        A photo of the confirmation SMS or the app receipt. Up to 5 MB.
+                        Optional, but it gets your seat confirmed faster.
+                      </p>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <button type="submit" className="btn btn-primary">
                         {t.checkout.manualSubmit}
                       </button>
+                      <p className="mt-2 text-xs text-ink-400">
+                        We check the transfer against our statement and activate your
+                        enrolment, usually within one working day.
+                      </p>
                     </div>
                   </form>
                 </section>

@@ -163,18 +163,56 @@ export async function startStripePayment(formData: FormData) {
 // ---------------------------------------------------------------------
 // Manual transfer — student sends bKash/Nagad money, admin confirms
 // ---------------------------------------------------------------------
+const RECEIPT_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "application/pdf",
+];
+const RECEIPT_MAX_BYTES = 5 * 1024 * 1024;
+
 export async function submitManualPayment(formData: FormData) {
   const enrollmentId = String(formData.get("enrollment_id") || "");
   const trxId = String(formData.get("trx_id") || "").trim().toUpperCase();
   const sender = String(formData.get("sender_number") || "").trim();
   const channel = String(formData.get("channel") || "bkash");
+  const receipt = formData.get("receipt");
 
   if (!trxId || !sender) redirect(`/checkout/${enrollmentId}?error=missing`);
 
   const info = await loadEnrollment(enrollmentId);
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
-  const { error } = await supabase.from("payments").insert({
+  // Upload the proof of transfer first — if it fails there is no half-made
+  // payment row to clean up.
+  let receiptPath: string | null = null;
+
+  if (receipt instanceof File && receipt.size > 0) {
+    if (!RECEIPT_TYPES.includes(receipt.type)) {
+      redirect(`/checkout/${enrollmentId}?error=receipt_type`);
+    }
+    if (receipt.size > RECEIPT_MAX_BYTES) {
+      redirect(`/checkout/${enrollmentId}?error=receipt_size`);
+    }
+
+    const extension = receipt.name.split(".").pop()?.toLowerCase() || "jpg";
+    // The first path segment is the owner — the storage policies key off it.
+    const path = `${info.userId}/${trxId}-${Date.now()}.${extension}`;
+
+    const { error: uploadError } = await admin.storage
+      .from("receipts")
+      .upload(path, receipt, { contentType: receipt.type, upsert: false });
+
+    if (uploadError) {
+      console.error("receipt upload:", uploadError.message);
+      redirect(`/checkout/${enrollmentId}?error=receipt_failed`);
+    }
+
+    receiptPath = path;
+  }
+
+  const { error } = await admin.from("payments").insert({
     enrollment_id: info.enrollmentId,
     user_id: info.userId,
     provider: "manual",
@@ -185,6 +223,7 @@ export async function submitManualPayment(formData: FormData) {
     tran_id: `MAN-${trxId}`,
     provider_ref: trxId,
     sender_number: sender,
+    receipt_path: receiptPath,
     meta: { channel },
   });
 
