@@ -21,6 +21,25 @@ type Loaded = {
 };
 
 /**
+ * True when this enrolment already has a payment awaiting review or one
+ * that has been confirmed.
+ *
+ * Deliberately not .maybeSingle(): that errors the moment two rows match,
+ * which is exactly the situation this guard exists to catch, and an errored
+ * query returns no data — so the check would fail open precisely when it
+ * mattered. That is how one student came to file fifteen cash payments.
+ */
+async function hasOpenPayment(enrollmentId: string): Promise<boolean> {
+  const { count } = await createAdminClient()
+    .from("payments")
+    .select("id", { count: "exact", head: true })
+    .eq("enrollment_id", enrollmentId)
+    .in("status", ["pending_review", "paid"]);
+
+  return (count ?? 0) > 0;
+}
+
+/**
  * Loads the enrolment, confirming it belongs to the caller and still needs
  * paying. Everything price-related comes from the database, never the form —
  * the browser must not be able to choose what it owes.
@@ -72,6 +91,10 @@ export async function startSslPayment(formData: FormData) {
   const enrollmentId = String(formData.get("enrollment_id") || "");
   const info = await loadEnrollment(enrollmentId);
 
+  if (await hasOpenPayment(info.enrollmentId)) {
+    redirect(`/checkout/${enrollmentId}/result?status=pending`);
+  }
+
   const tranId = newTranId("HGLC");
   const admin = createAdminClient();
 
@@ -119,6 +142,10 @@ export async function startSslPayment(formData: FormData) {
 export async function startStripePayment(formData: FormData) {
   const enrollmentId = String(formData.get("enrollment_id") || "");
   const info = await loadEnrollment(enrollmentId);
+
+  if (await hasOpenPayment(info.enrollmentId)) {
+    redirect(`/checkout/${enrollmentId}/result?status=pending`);
+  }
 
   const tranId = newTranId("HGLCX");
   const admin = createAdminClient();
@@ -210,6 +237,14 @@ export async function submitManualPayment(formData: FormData) {
   }
 
   const info = await loadEnrollment(enrollmentId);
+
+  // One payment per enrolment. Checked before the receipt is uploaded, so a
+  // repeat submission does not leave an orphaned file in storage. This is
+  // the friendly check; the unique index in one-payment.sql is the real one.
+  if (await hasOpenPayment(info.enrollmentId)) {
+    redirect(`/checkout/${enrollmentId}/result?status=pending`);
+  }
+
   const admin = createAdminClient();
 
   // What the student says they paid. It is a claim, not a fact — an admin
@@ -269,9 +304,18 @@ export async function submitManualPayment(formData: FormData) {
   });
 
   if (error) {
-    // Unique violation = this reference was already submitted by someone.
-    const reason = error.code === "23505" ? "duplicate_trx" : "insert";
-    redirect(`/checkout/${enrollmentId}?error=${reason}`);
+    // 23505 covers two different unique indexes. One is on the enrolment —
+    // two submissions racing each other, where the right answer is simply to
+    // show the student the payment that won rather than an error. The other
+    // is on tran_id: someone else has already quoted this reference.
+    if (error.code === "23505") {
+      if (await hasOpenPayment(info.enrollmentId)) {
+        redirect(`/checkout/${enrollmentId}/result?status=pending`);
+      }
+      redirect(`/checkout/${enrollmentId}?error=duplicate_trx`);
+    }
+    console.error("submitManualPayment insert:", error.message);
+    redirect(`/checkout/${enrollmentId}?error=insert`);
   }
 
   revalidatePath(`/checkout/${enrollmentId}`);

@@ -66,13 +66,20 @@ export default async function CheckoutPage({
     );
   }
 
-  // A manual transfer already awaiting review blocks further attempts.
-  const { data: pendingManual } = await supabase
+  // A transfer already awaiting review blocks further attempts.
+  //
+  // Ordered and limited rather than .maybeSingle(), which errors as soon as
+  // two rows match and so would hide the very duplicates it is meant to
+  // stop. Oldest first: that is the submission the admin will be reviewing.
+  const { data: pendingRows } = await supabase
     .from("payments")
-    .select("id, provider_ref")
+    .select("id, provider_ref, tran_id")
     .eq("enrollment_id", id)
     .eq("status", "pending_review")
-    .maybeSingle();
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  const pendingManual = pendingRows?.[0] ?? null;
 
   const priceBdt = Number(course.price_bdt);
   const priceUsd = Number(course.price_usd);
@@ -132,7 +139,10 @@ export default async function CheckoutPage({
               <p className="mt-3 text-sm text-ink-400">
                 {t.dashboard.reference}:{" "}
                 <span className="font-mono font-semibold text-ink-800">
-                  {pendingManual.provider_ref}
+                  {/* Cash has no reference to quote, so fall back to the
+                      one we generated — the student needs something to
+                      mention if they ask us about it. */}
+                  {pendingManual.provider_ref || pendingManual.tran_id}
                 </span>
               </p>
               <Link href="/dashboard" className="btn btn-outline mt-5">

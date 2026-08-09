@@ -1,7 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { submitManualPayment } from "@/app/actions/payments";
+
+/**
+ * Submitting a payment takes a moment — a receipt has to upload. Left
+ * enabled, the button reads as unresponsive and gets clicked again, which is
+ * how a single payment turned into fifteen. Its own component because
+ * useFormStatus only reports on the form above it.
+ */
+function SubmitButton({ label }: { label: string }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button type="submit" className="btn btn-primary" disabled={pending}>
+      {pending ? "Sending…" : label}
+    </button>
+  );
+}
 
 type Channel = "bkash" | "nagad" | "bank" | "cash";
 
@@ -191,9 +208,7 @@ export function ManualPaymentForm({
       </div>
 
       <div className="sm:col-span-2">
-        <button type="submit" className="btn btn-primary">
-          {submitLabel}
-        </button>
+        <SubmitButton label={submitLabel} />
         <p className="mt-2 text-xs text-ink-400">
           We check the payment against our records and activate your enrolment,
           usually within one working day.

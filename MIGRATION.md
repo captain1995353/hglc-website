@@ -41,9 +41,26 @@ If you build it yourself instead:
 curl -fsSL https://get.docker.com | sh
 ```
 
-You also need a Traefik instance terminating TLS. The current one lives in
-`/docker/traefik-wqiz/docker-compose.yml`; copy that file across and start
-it before the site.
+You also need a Traefik instance terminating TLS. Hostinger's template puts
+it in `/docker/traefik/docker-compose.yml`.
+
+**Check `ACME_EMAIL` before anything else.** The Traefik compose file reads
+the Let's Encrypt account address from a variable:
+
+```
+--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+```
+
+If there is no `.env` beside that compose file, the variable expands to an
+empty string, ACME registration fails, and Traefik quietly serves its own
+`TRAEFIK DEFAULT CERT` instead. Nothing in the logs says so at the default
+`WARN` level. Create it first:
+
+```bash
+cd /docker/traefik
+echo 'ACME_EMAIL=info@hangeul.com.bd' > .env
+docker compose up -d --force-recreate
+```
 
 ---
 
@@ -99,15 +116,82 @@ Check it before touching DNS, using the new server's IP:
 curl -H "Host: hangeulglobal.com" http://<new-ip>/ -I
 ```
 
-## 4. Move DNS
+## 4. Carry the certificate across first
 
-Only once step 3 answers. Change the `A` record for `hangeulglobal.com` from
-the old IP to the new one, TTL 300. The `www` CNAME needs no change.
+Do **not** rely on the new server obtaining its own certificate at cutover.
+Let's Encrypt validates over HTTP against the live domain name, so the new
+machine cannot prove ownership until DNS already points at it — which means
+every visitor sees a browser security warning during the gap. Traefik also
+does not retry on a schedule tight enough to close that gap; on this
+migration it attempted once, failed against the old IP, and then sat idle.
 
-Traefik requests a fresh Let's Encrypt certificate the first time a request
-arrives on the new machine, so give it a minute before judging.
+Copy the working certificate instead, so the new server is already correct
+the moment DNS moves. Both machines are yours, and the certificate covers
+both names until it expires.
 
-## 5. Decommission the old server
+The new server refuses password SSH, so authorise a key first. On the
+**old** server:
+
+```bash
+[ -f /root/.ssh/id_ed25519 ] || ssh-keygen -t ed25519 -N '' -f /root/.ssh/id_ed25519
+cat /root/.ssh/id_ed25519.pub
+```
+
+Paste that line on the **new** server:
+
+```bash
+mkdir -p /root/.ssh && chmod 700 /root/.ssh
+echo "<the public key>" > /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+```
+
+Then export and send the certificate store. On the **old** server — check
+`docker volume ls | grep letsencrypt` for the volume name, which is prefixed
+with the Compose project:
+
+```bash
+docker run --rm -v traefik-wqiz_traefik-letsencrypt:/le -v /root:/out alpine \
+  cp /le/acme.json /out/acme.json
+scp /root/acme.json root@<new-ip>:/root/acme.json
+```
+
+Load it on the **new** server:
+
+```bash
+cd /docker/traefik
+docker compose down
+docker run --rm -v traefik_traefik-letsencrypt:/le -v /root:/in alpine \
+  sh -c 'cp /in/acme.json /le/acme.json && chmod 600 /le/acme.json'
+docker compose up -d
+```
+
+`acme.json` contains private keys. Delete the copies in `/root` on both
+machines afterwards, and never commit it.
+
+## 5. Verify, then move DNS
+
+Prove the certificate is real **before** touching DNS — from your own
+machine, not from the server:
+
+```bash
+echo | openssl s_client -connect <new-ip>:443 -servername hangeulglobal.com 2>/dev/null \
+  | openssl x509 -noout -issuer -subject -dates
+curl -o /dev/null -w "%{http_code}\n" \
+  --resolve hangeulglobal.com:443:<new-ip> https://hangeulglobal.com/
+```
+
+The issuer must read `C=US, O=Let's Encrypt`. **Never verify with `curl -k`**
+— it ignores certificate validity entirely and reports a healthy 200 against
+a placeholder certificate that every browser will reject. `--resolve` is the
+right tool: it points the request at the new IP while still validating the
+chain for the real hostname.
+
+Only then change the `A` record for `hangeulglobal.com` to the new IP, TTL
+300. The `www` CNAME points at the apex and needs no change.
+
+Renewal happens normally on the new server once it owns the domain.
+
+## 6. Decommission the old server
 
 Leave it running for a day or two — DNS caches, and rolling back is just
 changing the record again. When you are satisfied:
