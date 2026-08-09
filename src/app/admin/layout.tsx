@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { requireRole, ROLE_LABELS } from "@/app/actions/admin/guard";
+import { requireRole } from "@/app/actions/admin/guard";
 import { AdminChrome } from "@/components/admin/AdminChrome";
+import { LanguageSwitch } from "@/components/admin/LanguageSwitch";
 import { signOut } from "@/app/actions/auth";
 
 export const metadata: Metadata = {
@@ -20,7 +21,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { profile, role, db } = await requireRole();
+  const { profile, role, locale, t, db } = await requireRole();
 
   // Counts that ride along in the rail so nothing waits unseen. Teachers do
   // not see those screens, so the queries are skipped for them.
@@ -50,9 +51,11 @@ export default async function AdminLayout({
   return (
     <AdminChrome
       role={role}
-      roleLabel={ROLE_LABELS[role]}
-      name={profile.full_name || ROLE_LABELS[role]}
+      roleLabel={t.roles[role]}
+      name={profile.full_name || t.roles[role]}
       badges={badges}
+      t={t}
+      languageSwitch={<LanguageSwitch locale={locale} />}
       signOut={
         <form action={signOut}>
           <button

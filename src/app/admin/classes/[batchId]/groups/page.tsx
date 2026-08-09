@@ -29,7 +29,7 @@ export default async function GroupsPage({
 }) {
   const { batchId } = await params;
   const { created, saved, deleted, error } = await searchParams;
-  const { db, batch } = await loadClass(batchId);
+  const { db, batch, t } = await loadClass(batchId);
 
   const { data: groupRows } = await db
     .from("class_groups")
@@ -80,16 +80,20 @@ export default async function GroupsPage({
     <>
       <BackLink href={`/admin/classes/${batchId}`}>{batch.course_title}</BackLink>
       <AdminHeader
-        title="Groups"
-        subtitle={`${batch.name} — split the class for pair work, projects or levels`}
+        title={t.groups.title}
+        subtitle={`${batch.name} — ${t.groups.subtitle}`}
       />
-      <ClassTabs batchId={batchId} />
+      <ClassTabs batchId={batchId} t={t} />
 
       <FlashMessage
         saved={created || saved || deleted}
         error={error}
         savedText={
-          created ? "Group created." : deleted ? "Group deleted." : "Members saved."
+          created
+            ? t.groups.created
+            : deleted
+              ? t.groups.deleted
+              : t.groups.membersSaved
         }
         messages={{ name: "Give the group a name." }}
       />
@@ -130,7 +134,7 @@ export default async function GroupsPage({
                   </div>
 
                   <button type="submit" className="btn btn-primary mt-5">
-                    Save members
+                    {t.groups.saveMembers}
                   </button>
                 </form>
 
@@ -141,7 +145,7 @@ export default async function GroupsPage({
                     type="submit"
                     className="text-sm font-medium text-coral-600 hover:underline"
                   >
-                    Delete group
+                    {t.groups.deleteGroup}
                   </button>
                 </form>
               </Panel>
@@ -150,23 +154,23 @@ export default async function GroupsPage({
 
           {groups.length > 0 && unassigned.length > 0 && (
             <p className="mb-6 rounded-lg bg-paper-dim px-4 py-3 text-sm text-ink-600">
-              <strong className="font-semibold text-ink-800">Not in any group:</strong>{" "}
+              <strong className="font-semibold text-ink-800">{t.groups.notInAnyGroup}</strong>{" "}
               {unassigned.map((s) => s.name).join(", ")}
             </p>
           )}
 
-          <Panel title="Add a group">
+          <Panel title={t.groups.addGroup}>
             <form action={createGroup} className="grid gap-5 sm:grid-cols-2">
               <input type="hidden" name="batch_id" value={batchId} />
-              <Field label="Name" name="name" required placeholder="Group A" />
+              <Field label={t.groups.groupName} name="name" required placeholder="Group A" />
               <Field
-                label="Note"
+                label={t.groups.note}
                 name="note"
                 placeholder="Speaking practice pairs"
               />
               <div className="sm:col-span-2">
                 <button type="submit" className="btn btn-primary">
-                  Create group
+                  {t.groups.createGroup}
                 </button>
               </div>
             </form>

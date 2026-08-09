@@ -38,7 +38,7 @@ export default async function AttendancePage({
 }) {
   const { batchId } = await params;
   const { session: sessionId, saved, deleted, error } = await searchParams;
-  const { db, batch } = await loadClass(batchId);
+  const { db, batch, t } = await loadClass(batchId);
 
   const { data: sessions } = await db
     .from("attendance_sessions")
@@ -82,32 +82,32 @@ export default async function AttendancePage({
   return (
     <>
       <BackLink href={`/admin/classes/${batchId}`}>{batch.course_title}</BackLink>
-      <AdminHeader title="Attendance" subtitle={batch.name} />
-      <ClassTabs batchId={batchId} />
+      <AdminHeader title={t.attendance.title} subtitle={batch.name} />
+      <ClassTabs batchId={batchId} t={t} />
 
       <FlashMessage
         saved={saved || deleted}
         error={error}
-        savedText={deleted ? "Register deleted." : "Attendance saved."}
+        savedText={deleted ? t.attendance.deleted : t.attendance.saved}
         messages={{
-          session_exists: "A register already exists for that date — open it below.",
+          session_exists: t.attendance.exists,
           failed: "Something went wrong. Please try again.",
         }}
       />
 
-      <Panel title="Start a register">
+      <Panel title={t.attendance.startRegister}>
         <form action={createAttendanceSession} className="grid gap-5 sm:grid-cols-3">
           <input type="hidden" name="batch_id" value={batchId} />
-          <Field label="Date" name="held_on" type="date" defaultValue={today} required />
+          <Field label={t.attendance.date} name="held_on" type="date" defaultValue={today} required />
           <Field
-            label="Topic"
+            label={t.attendance.topic}
             name="topic"
             placeholder="Chapter 4 — past tense"
             className="sm:col-span-2"
           />
           <div className="sm:col-span-3">
             <button type="submit" className="btn btn-primary">
-              Open register
+              {t.attendance.openRegister}
             </button>
             <p className="mt-2 text-xs text-ink-400">
               Everyone starts marked present — change only the students who were not.
@@ -140,11 +140,11 @@ export default async function AttendancePage({
       {!active ? (
         <EmptyState>No registers yet. Open one above to mark today&rsquo;s class.</EmptyState>
       ) : (roster ?? []).length === 0 ? (
-        <EmptyState>No active students in this batch yet.</EmptyState>
+        <EmptyState>{t.attendance.noActive}</EmptyState>
       ) : (
         <Panel
           title={formatDate(active.held_on)}
-          description={active.topic || "Mark each student, then save."}
+          description={active.topic || t.attendance.prefilled}
         >
           <form action={saveAttendance}>
             <input type="hidden" name="batch_id" value={batchId} />
@@ -186,7 +186,7 @@ export default async function AttendancePage({
             </ul>
 
             <button type="submit" className="btn btn-primary mt-6">
-              Save attendance
+              {t.attendance.saveAttendance}
             </button>
           </form>
 
@@ -197,7 +197,7 @@ export default async function AttendancePage({
               type="submit"
               className="text-sm font-medium text-coral-600 hover:underline"
             >
-              Delete this register
+              {t.attendance.deleteRegister}
             </button>
           </form>
         </Panel>

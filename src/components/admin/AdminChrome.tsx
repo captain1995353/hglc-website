@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/LogoMark";
 import type { Role } from "@/app/actions/admin/guard";
+import type { AdminDictionary } from "@/lib/i18n/admin";
 
 /**
  * The dashboard frame: fixed rail, top bar, content well.
@@ -18,7 +19,8 @@ import type { Role } from "@/app/actions/admin/guard";
 
 type NavItem = {
   href: string;
-  label: string;
+  /** Picks the label out of the dictionary, so it follows the language. */
+  label: (t: AdminDictionary) => string;
   roles: Role[];
   icon: React.ReactNode;
   exact?: boolean;
@@ -40,13 +42,16 @@ const icon = (path: React.ReactNode) => (
   </svg>
 );
 
-const SECTIONS: { title: string; items: NavItem[] }[] = [
+const SECTIONS: {
+  title: (t: AdminDictionary) => string;
+  items: NavItem[];
+}[] = [
   {
-    title: "Overview",
+    title: (t) => t.nav.overview,
     items: [
       {
         href: "/admin",
-        label: "Dashboard",
+        label: (t) => t.nav.dashboard,
         roles: ["admin", "staff"],
         exact: true,
         icon: icon(
@@ -60,7 +65,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
       },
       {
         href: "/admin/classes",
-        label: "My classes",
+        label: (t) => t.nav.myClasses,
         roles: ["teacher", "admin"],
         icon: icon(
           <>
@@ -73,11 +78,11 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
     ],
   },
   {
-    title: "Students",
+    title: (t) => t.nav.students,
     items: [
       {
         href: "/admin/students",
-        label: "Students",
+        label: (t) => t.nav.studentList,
         roles: ["admin", "staff"],
         icon: icon(
           <>
@@ -89,7 +94,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
       },
       {
         href: "/admin/enrolments",
-        label: "Enrolments",
+        label: (t) => t.nav.enrolments,
         roles: ["admin", "staff"],
         icon: icon(
           <>
@@ -101,7 +106,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
       },
       {
         href: "/admin/payments",
-        label: "Payments",
+        label: (t) => t.nav.payments,
         roles: ["admin", "staff"],
         icon: icon(
           <>
@@ -112,7 +117,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
       },
       {
         href: "/admin/conversations",
-        label: "Student messages",
+        label: (t) => t.nav.studentMessages,
         roles: ["admin", "staff"],
         icon: icon(
           <>
@@ -122,7 +127,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
       },
       {
         href: "/admin/messages",
-        label: "Enquiries",
+        label: (t) => t.nav.enquiries,
         roles: ["admin", "staff"],
         icon: icon(
           <>
@@ -134,11 +139,11 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
     ],
   },
   {
-    title: "Setup",
+    title: (t) => t.nav.setup,
     items: [
       {
         href: "/admin/courses",
-        label: "Courses & batches",
+        label: (t) => t.nav.courses,
         roles: ["admin"],
         icon: icon(
           <>
@@ -149,7 +154,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
       },
       {
         href: "/admin/admissions",
-        label: "Admissions",
+        label: (t) => t.nav.admissions,
         roles: ["admin"],
         icon: icon(
           <>
@@ -160,7 +165,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
       },
       {
         href: "/admin/staff",
-        label: "Staff & teachers",
+        label: (t) => t.nav.staff,
         roles: ["admin"],
         icon: icon(
           <>
@@ -171,7 +176,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
       },
       {
         href: "/admin/settings",
-        label: "Site settings",
+        label: (t) => t.nav.settings,
         roles: ["admin"],
         icon: icon(
           <>
@@ -189,15 +194,19 @@ export function AdminChrome({
   roleLabel,
   name,
   badges,
+  t,
   signOut,
+  languageSwitch,
   children,
 }: {
   role: Role;
   roleLabel: string;
   name: string;
   badges: Record<string, number>;
-  /** The sign-out form, rendered on the server so the action stays server-side. */
+  t: AdminDictionary;
+  /** Rendered on the server so their actions stay server-side. */
   signOut: React.ReactNode;
+  languageSwitch: React.ReactNode;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -213,7 +222,7 @@ export function AdminChrome({
   }, [open]);
 
   const sections = SECTIONS.map((section) => ({
-    ...section,
+    title: section.title(t),
     items: section.items.filter((item) => item.roles.includes(role)),
   })).filter((section) => section.items.length > 0);
 
@@ -234,7 +243,7 @@ export function AdminChrome({
             Hangeul
           </span>
           <span className="mt-1 block text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-ink-400">
-            {roleLabel} panel
+            {roleLabel} {t.chrome.panel}
           </span>
         </span>
       </div>
@@ -266,7 +275,7 @@ export function AdminChrome({
                       <span className={active ? "text-white" : "text-ink-400"}>
                         {item.icon}
                       </span>
-                      <span className="flex-1">{item.label}</span>
+                      <span className="flex-1">{item.label(t)}</span>
                       {badge ? (
                         <span className="rounded-full bg-coral-500 px-1.5 py-0.5 text-[0.65rem] font-bold text-white">
                           {badge}
@@ -282,7 +291,7 @@ export function AdminChrome({
       </nav>
 
       <div className="shrink-0 border-t border-white/10 px-5 py-4">
-        <p className="text-xs text-ink-500">Signed in as</p>
+        <p className="text-xs text-ink-500">{t.chrome.signedInAs}</p>
         <p className="truncate text-sm font-semibold text-white">{name}</p>
       </div>
     </div>
@@ -300,7 +309,7 @@ export function AdminChrome({
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={t.chrome.closeMenu}
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-ink-950/60"
           />
@@ -315,7 +324,7 @@ export function AdminChrome({
               <button
                 type="button"
                 onClick={() => setOpen(true)}
-                aria-label="Open menu"
+                aria-label={t.chrome.openMenu}
                 className="grid h-10 w-10 place-items-center rounded-lg border border-ink-200 text-ink-700 lg:hidden"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -330,10 +339,10 @@ export function AdminChrome({
 
               <div>
                 <p className="text-sm font-semibold text-ink-900">
-                  {roleLabel} dashboard
+                  {roleLabel} {t.chrome.dashboard}
                 </p>
                 <p className="hidden text-xs text-ink-400 sm:block">
-                  Hangeul Global Learning Center
+                  {t.chrome.centre}
                 </p>
               </div>
             </div>
@@ -344,8 +353,9 @@ export function AdminChrome({
                 target="_blank"
                 className="hidden text-sm font-medium text-ink-500 hover:text-ink-900 sm:inline"
               >
-                View site ↗
+                {t.chrome.viewSite} ↗
               </Link>
+              {languageSwitch}
               {signOut}
               <span
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white"

@@ -26,7 +26,7 @@ export type ClassBatch = {
  * their own.
  */
 export async function loadClass(batchId: string) {
-  const { user, role, db } = await requireRole(["teacher", "admin"]);
+  const { user, role, db, t, locale } = await requireRole(["teacher", "admin"]);
 
   const { data } = await db
     .from("batches")
@@ -59,7 +59,7 @@ export async function loadClass(batchId: string) {
     course_title: course?.title_en ?? "Course",
   };
 
-  return { user, role, db, batch };
+  return { user, role, db, t, locale, batch };
 }
 
 export const EMPTY_STATS: BatchStats = {

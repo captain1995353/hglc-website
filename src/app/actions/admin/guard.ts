@@ -4,6 +4,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured } from "@/lib/env";
+import {
+  getAdminDictionary,
+  type AdminDictionary,
+  type DashboardLocale,
+} from "@/lib/i18n/admin";
 
 export type Role = "student" | "teacher" | "staff" | "admin";
 
@@ -34,9 +39,12 @@ export async function requireRole(allowed: Role[] = DASHBOARD_ROLES) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/admin/login");
 
+  // `*` rather than a column list on purpose: naming a column that a pending
+  // migration has not added yet fails the whole query, which would read as
+  // "no profile" and lock every member of staff out of the dashboard.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role, is_admin, full_name")
+    .select("*")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -50,9 +58,17 @@ export async function requireRole(allowed: Role[] = DASHBOARD_ROLES) {
     redirect(role === "student" ? "/dashboard" : "/admin");
   }
 
+  // `dashboard_locale` arrives only after that migration has run; English
+  // until then rather than a crash.
+  const locale: DashboardLocale =
+    profile?.dashboard_locale === "ko" ? "ko" : "en";
+  const t: AdminDictionary = getAdminDictionary(locale);
+
   return {
     user,
     role,
+    locale,
+    t,
     profile: { full_name: profile?.full_name ?? "", role },
     db: createAdminClient(),
   };

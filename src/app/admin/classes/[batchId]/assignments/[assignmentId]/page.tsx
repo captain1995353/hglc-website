@@ -36,7 +36,7 @@ export default async function AssignmentDetailPage({
 }) {
   const { batchId, assignmentId } = await params;
   const { created, saved, graded } = await searchParams;
-  const { db, batch } = await loadClass(batchId);
+  const { db, batch, t } = await loadClass(batchId);
 
   const { data: raw } = await db
     .from("assignments")
@@ -82,7 +82,7 @@ export default async function AssignmentDetailPage({
     <>
       <BackLink href={`/admin/classes/${batchId}/assignments`}>All assignments</BackLink>
       <AdminHeader title={assignment.title} subtitle={batch.name} />
-      <ClassTabs batchId={batchId} />
+      <ClassTabs batchId={batchId} t={t} />
 
       <FlashMessage
         saved={created || saved || graded}

@@ -23,7 +23,7 @@ export default async function ClassOverviewPage({
   params: Promise<{ batchId: string }>;
 }) {
   const { batchId } = await params;
-  const { db, batch } = await loadClass(batchId);
+  const { db, batch, t } = await loadClass(batchId);
 
   const [stats, students] = await Promise.all([
     loadBatchStats(db, batchId),
@@ -31,15 +31,15 @@ export default async function ClassOverviewPage({
   ]);
 
   const tiles = [
-    { label: "Students", value: String(stats.active_students), accent: "bg-coral-500" },
-    { label: "Classes held", value: String(stats.sessions_held), accent: "bg-ink-800" },
+    { label: t.classes.students, value: String(stats.active_students), accent: "bg-coral-500" },
+    { label: t.classes.classesHeld, value: String(stats.sessions_held), accent: "bg-ink-800" },
     {
-      label: "Attendance",
+      label: t.classes.attendanceRate,
       value: stats.attendance_rate === null ? "—" : `${stats.attendance_rate}%`,
       accent: "bg-brand-600",
     },
     {
-      label: "Average score",
+      label: t.classes.averageScore,
       value: stats.average_score === null ? "—" : String(stats.average_score),
       accent: "bg-plum-600",
     },
@@ -53,7 +53,7 @@ export default async function ClassOverviewPage({
         subtitle={`${batch.name} · ${MODE_LABEL[batch.mode] ?? batch.mode} · starts ${formatDate(batch.start_date)}`}
       />
 
-      <ClassTabs batchId={batchId} />
+      <ClassTabs batchId={batchId} t={t} />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {tiles.map((tile) => (
@@ -69,14 +69,14 @@ export default async function ClassOverviewPage({
         ))}
       </div>
 
-      <Panel title="Class details">
+      <Panel title={t.classes.classDetails}>
         <dl className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
           <div className="flex gap-2">
-            <dt className="text-ink-400">Schedule</dt>
+            <dt className="text-ink-400">{t.classes.schedule}</dt>
             <dd className="font-medium text-ink-800">{batch.schedule_text || "—"}</dd>
           </div>
           <div className="flex gap-2">
-            <dt className="text-ink-400">Room / link</dt>
+            <dt className="text-ink-400">{t.classes.roomOrLink}</dt>
             <dd className="font-medium text-ink-800">
               {batch.room_or_link.startsWith("http") ? (
                 <a
@@ -93,13 +93,13 @@ export default async function ClassOverviewPage({
             </dd>
           </div>
           <div className="flex gap-2">
-            <dt className="text-ink-400">Seats</dt>
+            <dt className="text-ink-400">{t.classes.seats}</dt>
             <dd className="font-medium text-ink-800">
               {batch.seats_taken} / {batch.seats_total}
             </dd>
           </div>
           <div className="flex gap-2">
-            <dt className="text-ink-400">Assignments</dt>
+            <dt className="text-ink-400">{t.classes.tabs.assignments}</dt>
             <dd className="font-medium text-ink-800">
               {stats.assignments_published} published · {stats.submissions_graded}/
               {stats.submissions_received} graded
@@ -109,8 +109,8 @@ export default async function ClassOverviewPage({
       </Panel>
 
       <Panel
-        title="Students"
-        description="Attendance and marks per student, updated as you take the register and grade work."
+        title={t.classes.students}
+        description={t.classes.perStudent}
       >
         {students.length === 0 ? (
           <EmptyState>
@@ -118,7 +118,7 @@ export default async function ClassOverviewPage({
           </EmptyState>
         ) : (
           <TableShell
-            head={["Student", "Phone", "Attendance", "Present", "Submitted", "Average"]}
+            head={[t.common.student, t.common.phone, t.classes.attendanceRate, t.classes.present, t.classes.submitted, t.classes.average]}
             minWidth="48rem"
           >
             {students.map((student) => (

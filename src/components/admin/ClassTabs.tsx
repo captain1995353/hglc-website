@@ -2,16 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { AdminDictionary } from "@/lib/i18n/admin";
 
-const TABS = [
-  { slug: "", label: "Overview" },
-  { slug: "attendance", label: "Attendance" },
-  { slug: "assignments", label: "Assignments" },
-  { slug: "groups", label: "Groups" },
-  { slug: "report", label: "Report" },
+const TABS: { slug: string; label: (t: AdminDictionary) => string }[] = [
+  { slug: "", label: (t) => t.classes.tabs.overview },
+  { slug: "attendance", label: (t) => t.classes.tabs.attendance },
+  { slug: "assignments", label: (t) => t.classes.tabs.assignments },
+  { slug: "groups", label: (t) => t.classes.tabs.groups },
+  { slug: "report", label: (t) => t.classes.tabs.report },
 ];
 
-export function ClassTabs({ batchId }: { batchId: string }) {
+export function ClassTabs({
+  batchId,
+  t,
+}: {
+  batchId: string;
+  t: AdminDictionary;
+}) {
   const pathname = usePathname();
   const base = `/admin/classes/${batchId}`;
 
@@ -34,7 +41,7 @@ export function ClassTabs({ batchId }: { batchId: string }) {
                 : "border-transparent text-ink-500 hover:border-ink-200 hover:text-ink-800"
             }`}
           >
-            {tab.label}
+            {tab.label(t)}
           </Link>
         );
       })}

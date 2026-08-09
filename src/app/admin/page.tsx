@@ -96,7 +96,7 @@ const svg = (path: React.ReactNode) => (
 );
 
 export default async function AdminOverviewPage() {
-  const { db, role, profile } = await requireRole();
+  const { db, role, profile, t } = await requireRole();
 
   // Teachers have no business on the money screens; their landing page is
   // their own class list.
@@ -181,16 +181,16 @@ export default async function AdminOverviewPage() {
 
   const attention = [
     {
-      label: "Payments awaiting verification",
+      label: t.overview.paymentsToVerify,
       value: stats.payments_to_review,
       href: "/admin/payments?status=pending_review",
     },
     {
-      label: "Enrolments not yet paid",
+      label: t.overview.unpaidEnrolments,
       value: stats.pending_enrolments,
       href: "/admin/enrolments?status=pending_payment",
     },
-    { label: "Unread messages", value: stats.unread_messages, href: "/admin/messages" },
+    { label: t.overview.unreadMessages, value: stats.unread_messages, href: "/admin/messages" },
   ].filter((item) => item.value > 0);
 
   return (
@@ -212,7 +212,9 @@ export default async function AdminOverviewPage() {
                     : "bg-coral-50 text-coral-700"
                 }`}
               >
-                {admissions.open ? "Admissions open" : "Admissions closed"}
+                {admissions.open
+                  ? t.overview.admissionsOpen
+                  : t.overview.admissionsClosed}
               </span>
             </div>
 
@@ -222,24 +224,24 @@ export default async function AdminOverviewPage() {
 
             {admissions.open && admissions.window && (
               <p className="mt-1 text-sm text-ink-500">
-                {admissions.window.title} — closes{" "}
+                {admissions.window.title} — {t.overview.closes}{" "}
                 <LocalTime iso={admissions.window.closes_at} />
               </p>
             )}
 
             <div className="mt-5 flex flex-wrap gap-2">
               <Link href="/admin/enrolments" className="btn btn-primary px-4 py-2 text-sm">
-                Enrolments
+                {t.nav.enrolments}
               </Link>
               <Link href="/admin/payments" className="btn btn-outline px-4 py-2 text-sm">
-                Verify payments
+                {t.overview.verifyPayments}
               </Link>
               {role === "admin" && (
                 <Link
                   href="/admin/admissions"
                   className="btn btn-outline px-4 py-2 text-sm"
                 >
-                  Admissions
+                  {t.nav.admissions}
                 </Link>
               )}
             </div>
@@ -259,7 +261,7 @@ export default async function AdminOverviewPage() {
       {/* ---------------- KPI row ---------------- */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Tile
-          label="Students"
+          label={t.overview.students}
           value={String(stats.students)}
           href="/admin/students"
           tint="bg-coral-50 text-coral-600"
@@ -272,9 +274,9 @@ export default async function AdminOverviewPage() {
           )}
         />
         <Tile
-          label="Active enrolments"
+          label={t.overview.activeEnrolments}
           value={String(stats.active_enrolments)}
-          hint={`${stats.pending_enrolments} awaiting payment`}
+          hint={`${stats.pending_enrolments} ${t.overview.awaitingPayment}`}
           href="/admin/enrolments"
           tint="bg-brand-50 text-brand-700"
           icon={svg(
@@ -285,9 +287,9 @@ export default async function AdminOverviewPage() {
           )}
         />
         <Tile
-          label="Collected"
+          label={t.overview.collected}
           value={formatMoney(stats.revenue_bdt, "BDT")}
-          hint={`${formatMoney(stats.revenue_bdt_30d, "BDT")} in the last 30 days`}
+          hint={`${formatMoney(stats.revenue_bdt_30d, "BDT")} ${t.overview.last30}`}
           href="/admin/payments?status=paid"
           tint="bg-plum-50 text-plum-700"
           icon={svg(
@@ -298,9 +300,9 @@ export default async function AdminOverviewPage() {
           )}
         />
         <Tile
-          label="Open batches"
+          label={t.overview.openBatches}
           value={String(stats.open_batches)}
-          hint={`${stats.courses} live courses`}
+          hint={`${stats.courses} ${t.overview.liveCourses}`}
           href="/admin/courses"
           tint="bg-ink-100 text-ink-700"
           icon={svg(
@@ -331,8 +333,8 @@ export default async function AdminOverviewPage() {
       {/* ---------------- Charts ---------------- */}
       <div className="mb-6 grid gap-4 lg:grid-cols-3">
         <ChartCard
-          title="Money collected"
-          subtitle="Confirmed payments per month, in Taka"
+          title={t.overview.moneyCollected}
+          subtitle={t.overview.moneyCollectedSub}
           className="lg:col-span-2"
         >
           <TrendArea
@@ -341,7 +343,7 @@ export default async function AdminOverviewPage() {
           />
         </ChartCard>
 
-        <ChartCard title="Enrolments by status" subtitle="Every enrolment on record">
+        <ChartCard title={t.overview.byStatus} subtitle={t.overview.byStatusSub}>
           <StatusBar
             data={[...statusCounts].map(([key, value]) => ({ key, value }))}
           />
@@ -350,17 +352,17 @@ export default async function AdminOverviewPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard
-          title="Students per course"
-          subtitle="Active and completed enrolments"
+          title={t.overview.perCourse}
+          subtitle={t.overview.perCourseSub}
         >
           <RankedBars
             data={[...courseCounts].map(([label, value]) => ({ label, value }))}
           />
         </ChartCard>
 
-        <ChartCard title="Latest payments" subtitle="Newest first">
+        <ChartCard title={t.overview.latestPayments} subtitle={t.overview.newestFirst}>
           {(recentPayments ?? []).length === 0 ? (
-            <EmptyChart>No payments yet.</EmptyChart>
+            <EmptyChart>{t.overview.noPayments}</EmptyChart>
           ) : (
             <ul className="divide-y divide-ink-100">
               {(recentPayments ?? []).map((row) => (

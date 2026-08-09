@@ -25,7 +25,7 @@ export default async function AssignmentsPage({
 }) {
   const { batchId } = await params;
   const { deleted, error } = await searchParams;
-  const { db, batch } = await loadClass(batchId);
+  const { db, batch, t } = await loadClass(batchId);
 
   const { data } = await db
     .from("assignments")
@@ -55,8 +55,8 @@ export default async function AssignmentsPage({
   return (
     <>
       <BackLink href={`/admin/classes/${batchId}`}>{batch.course_title}</BackLink>
-      <AdminHeader title="Assignments" subtitle={batch.name} />
-      <ClassTabs batchId={batchId} />
+      <AdminHeader title={t.assignments.title} subtitle={batch.name} />
+      <ClassTabs batchId={batchId} t={t} />
 
       <FlashMessage
         saved={deleted}
@@ -69,7 +69,7 @@ export default async function AssignmentsPage({
       />
 
       {assignments.length === 0 ? (
-        <EmptyState>No assignments yet. Set the first one below.</EmptyState>
+        <EmptyState>{t.assignments.none}</EmptyState>
       ) : (
         <div className="mb-6 space-y-3">
           {assignments.map((assignment) => {
@@ -94,7 +94,7 @@ export default async function AssignmentsPage({
                             : "bg-ink-100 text-ink-500"
                         }`}
                       >
-                        {assignment.is_published ? "Published" : "Draft"}
+                        {assignment.is_published ? t.assignments.published : t.assignments.draft}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-ink-400">
@@ -125,29 +125,29 @@ export default async function AssignmentsPage({
       )}
 
       <Panel
-        title="Set an assignment"
-        description="Students see it in My Learning as soon as it is published."
+        title={t.assignments.setTitle}
+        description={t.assignments.setSub}
       >
         <form action={createAssignment} className="grid gap-5 sm:grid-cols-2">
           <input type="hidden" name="batch_id" value={batchId} />
 
           <Field
-            label="Title"
+            label={t.assignments.fieldTitle}
             name="title"
             required
             placeholder="Writing task 3 — describe your week"
             className="sm:col-span-2"
           />
           <TextArea
-            label="Instructions"
+            label={t.assignments.instructions}
             name="instructions"
             rows={5}
             placeholder="Write 150–200 words. Use at least five past-tense verbs."
             className="sm:col-span-2"
           />
-          <DateTimeField label="Due" name="due_at" />
+          <DateTimeField label={t.assignments.dueLabel} name="due_at" />
           <Field
-            label="Out of"
+            label={t.assignments.maxScore}
             name="max_score"
             type="number"
             min="1"
@@ -155,7 +155,7 @@ export default async function AssignmentsPage({
           />
           <div className="sm:col-span-2">
             <Checkbox
-              label="Publish now"
+              label={t.assignments.publishNow}
               name="is_published"
               defaultChecked
               hint="Leave off to save it as a draft students cannot see."
@@ -163,7 +163,7 @@ export default async function AssignmentsPage({
           </div>
           <div className="sm:col-span-2">
             <button type="submit" className="btn btn-primary">
-              Create assignment
+              {t.assignments.create}
             </button>
           </div>
         </form>

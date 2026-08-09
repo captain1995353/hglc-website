@@ -11,6 +11,7 @@ import {
 import { ClassTabs } from "@/components/admin/ClassTabs";
 import { formatDate, formatDateTime } from "@/lib/format";
 import type { BatchReport, BatchStats } from "@/lib/types";
+import type { AdminDictionary } from "@/lib/i18n/admin";
 
 function StatLine({ label, value }: { label: string; value: string }) {
   return (
@@ -21,21 +22,21 @@ function StatLine({ label, value }: { label: string; value: string }) {
   );
 }
 
-function describe(stats: BatchStats) {
+function describe(stats: BatchStats, t: AdminDictionary) {
   return [
-    { label: "Active students", value: String(stats.active_students) },
-    { label: "Classes held", value: String(stats.sessions_held) },
+    { label: t.report.activeStudents, value: String(stats.active_students) },
+    { label: t.report.classesHeld, value: String(stats.sessions_held) },
     {
-      label: "Attendance rate",
+      label: t.report.attendanceRate,
       value: stats.attendance_rate === null ? "—" : `${stats.attendance_rate}%`,
     },
-    { label: "Assignments published", value: String(stats.assignments_published) },
+    { label: t.report.assignmentsPublished, value: String(stats.assignments_published) },
     {
-      label: "Submissions",
-      value: `${stats.submissions_graded} graded of ${stats.submissions_received}`,
+      label: t.report.submissions,
+      value: `${stats.submissions_graded} ${t.report.gradedOf} ${stats.submissions_received}`,
     },
     {
-      label: "Average score",
+      label: t.report.averageScore,
       value: stats.average_score === null ? "—" : String(stats.average_score),
     },
   ];
@@ -50,7 +51,7 @@ export default async function ReportPage({
 }) {
   const { batchId } = await params;
   const { created, deleted, error } = await searchParams;
-  const { db, batch } = await loadClass(batchId);
+  const { db, batch, t } = await loadClass(batchId);
 
   const [stats, students] = await Promise.all([
     loadBatchStats(db, batchId),
@@ -73,8 +74,8 @@ export default async function ReportPage({
   return (
     <>
       <BackLink href={`/admin/classes/${batchId}`}>{batch.course_title}</BackLink>
-      <AdminHeader title="Batch report" subtitle={batch.name} />
-      <ClassTabs batchId={batchId} />
+      <AdminHeader title={t.report.title} subtitle={batch.name} />
+      <ClassTabs batchId={batchId} t={t} />
 
       <FlashMessage
         saved={created || deleted}
@@ -84,11 +85,11 @@ export default async function ReportPage({
       />
 
       <Panel
-        title="Where the batch stands today"
-        description="These numbers are saved with each report, so an old report keeps the figures it was written with."
+        title={t.report.today}
+        description={t.report.todaySub}
       >
         <div className="grid gap-x-10 sm:grid-cols-2">
-          {describe(stats).map((line) => (
+          {describe(stats, t).map((line) => (
             <StatLine key={line.label} label={line.label} value={line.value} />
           ))}
         </div>
@@ -96,7 +97,7 @@ export default async function ReportPage({
         {struggling.length > 0 && (
           <div className="mt-5 rounded-lg bg-coral-50 px-4 py-3">
             <p className="text-sm font-semibold text-coral-700">
-              Attendance below 70%
+              {t.report.belowSeventy}
             </p>
             <p className="mt-1 text-sm text-coral-700/90">
               {struggling
@@ -107,12 +108,12 @@ export default async function ReportPage({
         )}
       </Panel>
 
-      <Panel title="Per student">
+      <Panel title={t.report.perStudent}>
         {students.length === 0 ? (
           <p className="text-sm text-ink-500">No students yet.</p>
         ) : (
           <TableShell
-            head={["Student", "Attendance", "Submitted", "Average"]}
+            head={[t.common.student, t.classes.attendanceRate, t.classes.submitted, t.classes.average]}
             minWidth="34rem"
           >
             {students.map((student) => (
@@ -135,7 +136,7 @@ export default async function ReportPage({
         )}
       </Panel>
 
-      <Panel title="Write a report">
+      <Panel title={t.report.write}>
         <form action={createReport} className="grid gap-5 sm:grid-cols-2">
           <input type="hidden" name="batch_id" value={batchId} />
           <Field
@@ -145,16 +146,16 @@ export default async function ReportPage({
             placeholder="Week 6 progress report"
             className="sm:col-span-2"
           />
-          <Field label="Period from" name="period_start" type="date" />
+          <Field label={t.report.periodFrom} name="period_start" type="date" />
           <Field
-            label="Period to"
+            label={t.report.periodTo}
             name="period_end"
             type="date"
             defaultValue={today}
           />
           <div className="sm:col-span-2">
             <label className="field-label" htmlFor="summary">
-              Summary
+              {t.report.summary}
             </label>
             <textarea
               id="summary"
@@ -166,7 +167,7 @@ export default async function ReportPage({
           </div>
           <div className="sm:col-span-2">
             <button type="submit" className="btn btn-primary">
-              Save report
+              {t.report.saveReport}
             </button>
           </div>
         </form>
@@ -175,7 +176,7 @@ export default async function ReportPage({
       {reports.length > 0 && (
         <>
           <h2 className="mb-4 mt-10 text-xl font-bold tracking-tight">
-            Previous reports
+            {t.report.previous}
           </h2>
           {reports.map((report) => {
             const snapshot = report.stats as Partial<BatchStats>;

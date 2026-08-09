@@ -22,7 +22,7 @@ type TeacherBatch = {
  * when they teach a batch themselves.
  */
 export default async function MyClassesPage() {
-  const { db, user } = await requireRole(["teacher", "admin"]);
+  const { db, user, t } = await requireRole(["teacher", "admin"]);
 
   const { data } = await db.rpc("teacher_batches", { teacher: user.id });
   const batches = (data ?? []) as TeacherBatch[];
@@ -55,14 +55,13 @@ export default async function MyClassesPage() {
   return (
     <>
       <AdminHeader
-        title="My classes"
-        subtitle="The batches assigned to you, and who is in them."
+        title={t.classes.title}
+        subtitle={t.classes.subtitle}
       />
 
       {batches.length === 0 ? (
         <EmptyState>
-          No batches are assigned to you yet. An administrator assigns them under
-          Staff &amp; teachers.
+          {t.classes.none}
         </EmptyState>
       ) : (
         batches.map((batch) => {
@@ -83,10 +82,10 @@ export default async function MyClassesPage() {
                   <p className="mt-1 text-sm text-ink-500">
                     {batch.batch_name} ·{" "}
                     {batch.mode === "online"
-                      ? "Live online"
+                      ? t.classes.online
                       : batch.mode === "hybrid"
-                        ? "Hybrid"
-                        : "On campus"}
+                        ? t.classes.hybrid
+                        : t.classes.onCampus}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -94,31 +93,31 @@ export default async function MyClassesPage() {
                     href={`/admin/classes/${batch.batch_id}/attendance`}
                     className="btn btn-primary px-3 py-1.5 text-xs"
                   >
-                    Take attendance
+                    {t.classes.takeAttendance}
                   </Link>
                   <Link
                     href={`/admin/classes/${batch.batch_id}`}
                     className="btn btn-outline px-3 py-1.5 text-xs"
                   >
-                    Open class
+                    {t.classes.openClass}
                   </Link>
                 </div>
               </div>
               <dl className="mb-5 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
                 <div className="flex gap-2">
-                  <dt className="text-ink-400">Starts</dt>
+                  <dt className="text-ink-400">{t.classes.starts}</dt>
                   <dd className="font-medium text-ink-800">
                     {formatDate(batch.start_date)}
                   </dd>
                 </div>
                 <div className="flex gap-2">
-                  <dt className="text-ink-400">Schedule</dt>
+                  <dt className="text-ink-400">{t.classes.schedule}</dt>
                   <dd className="font-medium text-ink-800">
                     {batch.schedule_text || "—"}
                   </dd>
                 </div>
                 <div className="flex gap-2">
-                  <dt className="text-ink-400">Room / link</dt>
+                  <dt className="text-ink-400">{t.classes.roomOrLink}</dt>
                   <dd className="font-medium text-ink-800">
                     {batch.room_or_link.startsWith("http") ? (
                       <a
@@ -135,19 +134,19 @@ export default async function MyClassesPage() {
                   </dd>
                 </div>
                 <div className="flex gap-2">
-                  <dt className="text-ink-400">Students</dt>
+                  <dt className="text-ink-400">{t.classes.students}</dt>
                   <dd className="font-medium text-ink-800">
-                    {batch.active_students} active · {batch.seats_total} seats
+                    {batch.active_students} {t.classes.active} · {batch.seats_total} {t.classes.seats}
                   </dd>
                 </div>
               </dl>
 
               {roster.length === 0 ? (
                 <p className="text-sm text-ink-500">
-                  Nobody has been enrolled and paid yet.
+                  {t.classes.nobodyYet}
                 </p>
               ) : (
-                <TableShell head={["#", "Student", "Phone", "Enrolled"]} minWidth="32rem">
+                <TableShell head={["#", t.common.student, t.common.phone, t.classes.enrolled]} minWidth="32rem">
                   {roster.map((row, index) => {
                     const profile = profileById.get(row.user_id);
                     return (
