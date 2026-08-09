@@ -18,10 +18,22 @@ export async function updateProfile(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const full_name = String(formData.get("full_name") || "").trim();
-  const phone = String(formData.get("phone") || "").trim();
+  // Only columns the form actually submitted are written. A form that omits
+  // the emergency fields must not blank them.
+  const patch: Record<string, string> = {};
+  for (const key of [
+    "full_name",
+    "phone",
+    "emergency_name",
+    "emergency_phone",
+    "emergency_relation",
+  ]) {
+    if (formData.has(key)) patch[key] = String(formData.get(key) ?? "").trim();
+  }
 
-  await supabase.from("profiles").update({ full_name, phone }).eq("id", user.id);
+  if (Object.keys(patch).length > 0) {
+    await supabase.from("profiles").update(patch).eq("id", user.id);
+  }
 
   revalidatePath("/dashboard");
 }

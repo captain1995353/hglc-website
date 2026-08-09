@@ -111,8 +111,18 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
         ),
       },
       {
+        href: "/admin/conversations",
+        label: "Student messages",
+        roles: ["admin", "staff"],
+        icon: icon(
+          <>
+            <path d="M21 11.5a8.4 8.4 0 0 1-9 8.3 9 9 0 0 1-3.4-.6L3 21l1.9-5.1A8.2 8.2 0 0 1 4 11.5 8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z" />
+          </>,
+        ),
+      },
+      {
         href: "/admin/messages",
-        label: "Messages",
+        label: "Enquiries",
         roles: ["admin", "staff"],
         icon: icon(
           <>

@@ -4,6 +4,8 @@ import { site } from "@/lib/site";
 import { getSettings, setting } from "@/lib/settings";
 import { MapEmbed } from "@/components/MapEmbed";
 import { sendContactMessage } from "@/app/actions/contact";
+import { getUser } from "@/lib/supabase/server";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -19,6 +21,9 @@ export default async function ContactPage({
   const { locale, t } = await getI18n();
   const { sent, error } = await searchParams;
   const settings = await getSettings();
+  // A signed-in student already gave us their details — send them to the
+  // thread instead of asking for a name and email a second time.
+  const user = await getUser();
 
   const phone = setting(settings, "contact_phone", locale, site.phone);
   const email = setting(settings, "contact_email", locale, site.email);
@@ -39,6 +44,24 @@ export default async function ContactPage({
       </section>
 
       <section className="container-page grid gap-10 py-12 lg:grid-cols-[1.3fr_1fr] lg:items-start">
+        {user ? (
+          <div className="card p-7">
+            <h2 className="text-lg font-bold text-ink-900">
+              You are signed in — message us directly
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink-600">
+              Write to us from your account and the whole conversation stays in
+              one place, with your name, course and payment history already
+              attached. No need to type your details again.
+            </p>
+            <Link href="/dashboard/messages" className="btn btn-primary mt-5">
+              Open my messages
+            </Link>
+            <p className="mt-4 text-xs text-ink-400">
+              Prefer email or phone? The details are on the right.
+            </p>
+          </div>
+        ) : (
         <div className="card p-7">
           {sent && (
             <p className="mb-5 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-800">
@@ -116,6 +139,7 @@ export default async function ContactPage({
             </div>
           </form>
         </div>
+        )}
 
         <aside className="space-y-4">
           <div className="card p-6">

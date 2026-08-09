@@ -27,7 +27,7 @@ export default async function AdminLayout({
   const badges: Record<string, number> = {};
 
   if (role === "admin" || role === "staff") {
-    const [review, messages] = await Promise.all([
+    const [review, messages, threads] = await Promise.all([
       db
         .from("payments")
         .select("id", { count: "exact", head: true })
@@ -36,10 +36,15 @@ export default async function AdminLayout({
         .from("contact_messages")
         .select("id", { count: "exact", head: true })
         .eq("handled", false),
+      db
+        .from("conversations")
+        .select("id", { count: "exact", head: true })
+        .gt("unread_for_staff", 0),
     ]);
 
     badges["/admin/payments"] = review.count ?? 0;
     badges["/admin/messages"] = messages.count ?? 0;
+    badges["/admin/conversations"] = threads.count ?? 0;
   }
 
   return (

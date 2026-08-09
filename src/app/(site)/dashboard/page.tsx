@@ -27,14 +27,24 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, phone")
+    .select("full_name, phone, emergency_name, emergency_phone, emergency_relation")
     .eq("id", user.id)
     .maybeSingle();
 
-  const [enrollments, payments] = await Promise.all([
+  const [enrollments, payments, { data: unreadThreads }] = await Promise.all([
     listMyEnrollments(user.id),
     listMyPayments(user.id),
+    supabase
+      .from("conversations")
+      .select("unread_for_student")
+      .eq("student_id", user.id)
+      .gt("unread_for_student", 0),
   ]);
+
+  const unreadMessages = (unreadThreads ?? []).reduce(
+    (sum, row) => sum + Number(row.unread_for_student ?? 0),
+    0,
+  );
 
   // Classes the student is actually attending drive the classroom section.
   const activeEnrolments = enrollments.filter(
@@ -74,10 +84,21 @@ export default async function DashboardPage() {
 
   return (
     <div className="container-page py-12 sm:py-16">
-      <h1 className="text-3xl font-bold tracking-tight">{t.dashboard.title}</h1>
-      <p className="mt-2 text-ink-500">
-        {t.dashboard.greeting}, {profile?.full_name || user.email}
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t.dashboard.title}</h1>
+          <p className="mt-2 text-ink-500">
+            {t.dashboard.greeting}, {profile?.full_name || user.email}
+          </p>
+        </div>
+
+        <Link href="/dashboard/messages" className="btn btn-outline">
+          Messages
+          {unreadMessages > 0 && (
+            <span className="badge bg-coral-500 text-white">{unreadMessages}</span>
+          )}
+        </Link>
+      </div>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_20rem] lg:items-start">
         <div>
@@ -257,6 +278,49 @@ export default async function DashboardPage() {
                 className="field-input"
               />
             </div>
+
+            <fieldset className="rounded-lg border border-ink-200 p-3">
+              <legend className="px-1 text-xs font-semibold text-ink-600">
+                Emergency contact
+              </legend>
+              <div className="space-y-3">
+                <div>
+                  <label className="field-label" htmlFor="emergency_phone">
+                    Phone
+                  </label>
+                  <input
+                    id="emergency_phone"
+                    name="emergency_phone"
+                    type="tel"
+                    defaultValue={profile?.emergency_phone ?? ""}
+                    className="field-input"
+                  />
+                </div>
+                <div>
+                  <label className="field-label" htmlFor="emergency_relation">
+                    Relationship
+                  </label>
+                  <input
+                    id="emergency_relation"
+                    name="emergency_relation"
+                    defaultValue={profile?.emergency_relation ?? ""}
+                    placeholder="Father, sister, spouse…"
+                    className="field-input"
+                  />
+                </div>
+                <div>
+                  <label className="field-label" htmlFor="emergency_name">
+                    Name
+                  </label>
+                  <input
+                    id="emergency_name"
+                    name="emergency_name"
+                    defaultValue={profile?.emergency_name ?? ""}
+                    className="field-input"
+                  />
+                </div>
+              </div>
+            </fieldset>
 
             <div>
               <label className="field-label" htmlFor="email">

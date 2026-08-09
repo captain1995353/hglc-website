@@ -20,6 +20,9 @@ export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
     email: "",
     phone: "",
     password: "",
+    emergency_name: "",
+    emergency_phone: "",
+    emergency_relation: "",
   });
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +44,13 @@ export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
       email: form.email.trim(),
       password: form.password,
       options: {
-        data: { full_name: form.full_name.trim(), phone: form.phone.trim() },
+        data: {
+          full_name: form.full_name.trim(),
+          phone: form.phone.trim(),
+          emergency_name: form.emergency_name.trim(),
+          emergency_phone: form.emergency_phone.trim(),
+          emergency_relation: form.emergency_relation.trim(),
+        },
       },
     });
 
@@ -196,6 +205,59 @@ export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
           onChange={update("phone")}
         />
       </div>
+
+      <fieldset className="rounded-lg border border-ink-200 p-4">
+        <legend className="px-1 text-sm font-semibold text-ink-700">
+          Emergency contact
+        </legend>
+        <p className="mb-3 text-xs text-ink-400">
+          Someone we can call if we cannot reach you.
+        </p>
+
+        <div className="space-y-3">
+          <div>
+            <label className="field-label" htmlFor="emergency_phone">
+              Phone number
+            </label>
+            <input
+              id="emergency_phone"
+              type="tel"
+              required
+              placeholder="01XXXXXXXXX"
+              className="field-input"
+              value={form.emergency_phone}
+              onChange={update("emergency_phone")}
+            />
+          </div>
+
+          <div>
+            <label className="field-label" htmlFor="emergency_relation">
+              Their relationship to you
+            </label>
+            <input
+              id="emergency_relation"
+              required
+              placeholder="Father, sister, spouse…"
+              className="field-input"
+              value={form.emergency_relation}
+              onChange={update("emergency_relation")}
+            />
+          </div>
+
+          <div>
+            <label className="field-label" htmlFor="emergency_name">
+              Their name
+            </label>
+            <input
+              id="emergency_name"
+              placeholder="Optional"
+              className="field-input"
+              value={form.emergency_name}
+              onChange={update("emergency_name")}
+            />
+          </div>
+        </div>
+      </fieldset>
 
       <div>
         <label className="field-label" htmlFor="password">

@@ -34,7 +34,7 @@ export default async function StudentDetailPage({
 
   const { data: student } = await db
     .from("profiles")
-    .select("id, full_name, phone, is_admin, created_at")
+    .select("id, full_name, phone, is_admin, created_at, emergency_name, emergency_phone, emergency_relation")
     .eq("id", id)
     .maybeSingle();
 
@@ -82,6 +82,22 @@ export default async function StudentDetailPage({
           <input type="hidden" name="id" value={student.id} />
           <Field label="Full name" name="full_name" defaultValue={student.full_name} />
           <Field label="Phone" name="phone" defaultValue={student.phone} />
+          <Field
+            label="Emergency contact name"
+            name="emergency_name"
+            defaultValue={student.emergency_name}
+          />
+          <Field
+            label="Emergency contact phone"
+            name="emergency_phone"
+            defaultValue={student.emergency_phone}
+          />
+          <Field
+            label="Relationship"
+            name="emergency_relation"
+            defaultValue={student.emergency_relation}
+            hint="Father, sister, spouse…"
+          />
           <div className="sm:col-span-2">
             <button type="submit" className="btn btn-primary">
               Save details
