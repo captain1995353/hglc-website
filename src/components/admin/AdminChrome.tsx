@@ -64,14 +64,30 @@ const SECTIONS: {
         ),
       },
       {
+        // Teachers only. An admin does not have "my" classes — they oversee
+        // all of them, which is what /admin/attendance is for.
         href: "/admin/classes",
         label: (t) => t.nav.myClasses,
-        roles: ["teacher", "admin"],
+        roles: ["teacher"],
         icon: icon(
           <>
             <path d="M4 5h16v11H4z" />
             <path d="M8 20h8" />
             <path d="M12 16v4" />
+          </>,
+        ),
+      },
+      {
+        href: "/admin/attendance",
+        label: (t) => t.nav.attendance,
+        roles: ["admin"],
+        icon: icon(
+          <>
+            <rect x="3.5" y="4.5" width="17" height="16" rx="2.5" />
+            <path d="M3.5 9h17" />
+            <path d="M8 3v3" />
+            <path d="M16 3v3" />
+            <path d="M8.5 13.8l2 2 4-4.2" />
           </>,
         ),
       },
