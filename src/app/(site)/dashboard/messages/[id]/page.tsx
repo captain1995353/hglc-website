@@ -4,19 +4,17 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { markStudentRead, replyToConversation } from "@/app/actions/messages";
-import { MessageThread, type ThreadMessage } from "@/components/MessageThread";
+import { LiveThread } from "@/components/LiveThread";
+import type { ThreadMessage } from "@/components/MessageThread";
 
 export const metadata: Metadata = { title: "Message", robots: { index: false } };
 
 export default async function StudentThreadPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -62,49 +60,27 @@ export default async function StudentThreadPage({
       </div>
 
       <div className="mt-8 max-w-3xl">
-        <MessageThread
-          messages={(messages ?? []) as ThreadMessage[]}
+        <LiveThread
+          conversationId={id}
+          initialMessages={(messages ?? []) as ThreadMessage[]}
           viewer="student"
           studentName="You"
+          staffName="Hangeul Global"
+          canSend={conversation.is_open}
+          sendAction={replyToConversation}
+          closedNotice={
+            <div className="mt-6 rounded-lg bg-paper-dim px-4 py-4 text-sm text-ink-600">
+              This conversation is closed.{" "}
+              <Link
+                href="/dashboard/messages"
+                className="font-semibold text-brand-700 hover:underline"
+              >
+                Start a new one
+              </Link>{" "}
+              if you need anything else.
+            </div>
+          }
         />
-
-        {error && (
-          <p className="mt-5 rounded-lg bg-coral-50 px-4 py-3 text-sm text-coral-700">
-            {error === "closed"
-              ? "This conversation has been closed. Start a new one if you still need help."
-              : "Write a message before sending."}
-          </p>
-        )}
-
-        {conversation.is_open ? (
-          <form action={replyToConversation} className="mt-6">
-            <input type="hidden" name="conversation_id" value={id} />
-            <label className="field-label" htmlFor="body">
-              Reply
-            </label>
-            <textarea
-              id="body"
-              name="body"
-              rows={4}
-              required
-              className="field-input resize-y"
-            />
-            <button type="submit" className="btn btn-primary mt-3">
-              Send reply
-            </button>
-          </form>
-        ) : (
-          <div className="mt-6 rounded-lg bg-paper-dim px-4 py-4 text-sm text-ink-600">
-            This conversation is closed.{" "}
-            <Link
-              href="/dashboard/messages"
-              className="font-semibold text-brand-700 hover:underline"
-            >
-              Start a new one
-            </Link>{" "}
-            if you need anything else.
-          </div>
-        )}
       </div>
     </div>
   );

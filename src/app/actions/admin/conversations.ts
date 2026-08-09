@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireOperations, str } from "./guard";
 
 /** Staff side of the same threads students write to from their portal. */
@@ -12,8 +11,7 @@ export async function replyAsStaff(form: FormData) {
   const conversationId = str(form, "conversation_id");
   const body = str(form, "body");
 
-  if (!conversationId) redirect("/admin/conversations");
-  if (!body) redirect(`/admin/conversations/${conversationId}?error=empty`);
+  if (!conversationId || !body) return;
 
   await db.from("messages").insert({
     conversation_id: conversationId,
@@ -30,7 +28,6 @@ export async function replyAsStaff(form: FormData) {
 
   revalidatePath(`/admin/conversations/${conversationId}`);
   revalidatePath("/admin/conversations");
-  redirect(`/admin/conversations/${conversationId}`);
 }
 
 export async function setConversationOpen(form: FormData) {

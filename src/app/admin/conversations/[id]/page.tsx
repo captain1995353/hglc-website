@@ -7,17 +7,15 @@ import {
   setConversationOpen,
 } from "@/app/actions/admin/conversations";
 import { AdminHeader, BackLink, Panel } from "@/components/admin/ui";
-import { MessageThread, type ThreadMessage } from "@/components/MessageThread";
+import { LiveThread } from "@/components/LiveThread";
+import type { ThreadMessage } from "@/components/MessageThread";
 
 export default async function ConversationPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
   const { db } = await requireOperations();
 
   const { data: conversation } = await db
@@ -68,42 +66,21 @@ export default async function ConversationPage({
       <div className="grid gap-6 lg:grid-cols-[1fr_18rem] lg:items-start">
         <div>
           <Panel>
-            <MessageThread
-              messages={(messages ?? []) as ThreadMessage[]}
+            <LiveThread
+              conversationId={id}
+              initialMessages={(messages ?? []) as ThreadMessage[]}
               viewer="staff"
               studentName={student?.full_name || "Student"}
               staffName="You"
+              canSend={conversation.is_open}
+              sendAction={replyAsStaff}
+              closedNotice={
+                <p className="mt-6 rounded-lg bg-paper-dim px-4 py-3 text-sm text-ink-600">
+                  This conversation is closed. Reopen it to reply.
+                </p>
+              }
             />
           </Panel>
-
-          {error === "empty" && (
-            <p className="mb-4 rounded-lg bg-coral-50 px-4 py-3 text-sm text-coral-700">
-              Write a reply before sending.
-            </p>
-          )}
-
-          {conversation.is_open ? (
-            <form action={replyAsStaff}>
-              <input type="hidden" name="conversation_id" value={id} />
-              <label className="field-label" htmlFor="body">
-                Reply
-              </label>
-              <textarea
-                id="body"
-                name="body"
-                rows={4}
-                required
-                className="field-input resize-y"
-              />
-              <button type="submit" className="btn btn-primary mt-3">
-                Send reply
-              </button>
-            </form>
-          ) : (
-            <p className="rounded-lg bg-paper-dim px-4 py-3 text-sm text-ink-600">
-              This conversation is closed. Reopen it to reply.
-            </p>
-          )}
         </div>
 
         <aside className="card p-5">

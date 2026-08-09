@@ -61,8 +61,7 @@ export async function replyToConversation(form: FormData) {
   const conversationId = String(form.get("conversation_id") ?? "");
   const body = String(form.get("body") ?? "").trim();
 
-  if (!conversationId) redirect("/dashboard/messages");
-  if (!body) redirect(`/dashboard/messages/${conversationId}?error=empty`);
+  if (!conversationId || !body) return;
 
   const db = createAdminClient();
 
@@ -87,8 +86,10 @@ export async function replyToConversation(form: FormData) {
     body,
   });
 
+  // No redirect: the thread is live, so the page stays put and the new row
+  // arrives over the socket.
   revalidatePath(`/dashboard/messages/${conversationId}`);
-  redirect(`/dashboard/messages/${conversationId}`);
+  revalidatePath("/dashboard/messages");
 }
 
 /** Clears the student's unread badge once they have opened the thread. */
