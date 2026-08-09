@@ -1,18 +1,29 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MessageThread, type ThreadMessage } from "@/components/MessageThread";
 
 /**
  * A conversation that updates itself.
  *
- * New messages arrive over Supabase Realtime rather than a poll, so the other
- * side's reply lands without touching the page. Sending goes through the
- * server action — it is the thing that checks the thread is yours and still
- * open — but the message is shown immediately and reconciled when the insert
- * comes back over the socket.
+ * Two mechanisms, deliberately:
+ *
+ *  - Supabase Realtime pushes new rows over a websocket, which is instant.
+ *    Its auth token is set explicitly rather than relied upon: the browser
+ *    client restores its session from cookies, and the socket can open before
+ *    that lands — an unauthenticated socket subscribes happily and then
+ *    silently receives nothing, because row-level security filters it out.
+ *
+ *  - A slow poll runs alongside it. Corporate proxies and flaky mobile
+ *    networks drop websockets, and a message that never arrives is worse than
+ *    one that takes ten seconds.
+ *
+ * Sending goes through the server action, which is what checks the thread
+ * belongs to you and is still open.
  */
+const POLL_MS = 10_000;
+
 export function LiveThread({
   conversationId,
   initialMessages,
@@ -29,7 +40,6 @@ export function LiveThread({
   studentName: string;
   staffName: string;
   canSend: boolean;
-  /** Server action; validates ownership before writing. */
   sendAction: (formData: FormData) => Promise<void>;
   closedNotice?: React.ReactNode;
 }) {
@@ -39,38 +49,76 @@ export function LiveThread({
   const formRef = useRef<HTMLFormElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // A server re-render (navigation, revalidate) is the source of truth.
+  /** Adds rows we do not already have, keeping the thread in time order. */
+  const merge = useCallback((incoming: ThreadMessage[]) => {
+    if (incoming.length === 0) return;
+    setMessages((current) => {
+      const seen = new Set(current.map((m) => m.id));
+      const fresh = incoming.filter((m) => !seen.has(m.id));
+      if (fresh.length === 0) return current;
+      return [...current, ...fresh].sort((a, b) =>
+        a.created_at.localeCompare(b.created_at),
+      );
+    });
+  }, []);
+
   useEffect(() => setMessages(initialMessages), [initialMessages]);
 
   useEffect(() => {
     const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let poll: ReturnType<typeof setInterval> | null = null;
+    let cancelled = false;
 
-    const channel = supabase
-      .channel(`thread:${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const row = payload.new as ThreadMessage;
-          setMessages((current) =>
-            // The sender already has this one from its optimistic copy.
-            current.some((m) => m.id === row.id) ? current : [...current, row],
-          );
-        },
-      )
-      .subscribe();
+    async function start() {
+      // Hand the socket a token before subscribing, or RLS filters
+      // everything out and the channel looks healthy while delivering none.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        await supabase.realtime.setAuth(session.access_token);
+      }
+      if (cancelled) return;
+
+      channel = supabase
+        .channel(`thread:${conversationId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: `conversation_id=eq.${conversationId}`,
+          },
+          (payload) => merge([payload.new as ThreadMessage]),
+        )
+        .subscribe();
+
+      // The safety net. Cheap: one indexed query per ten seconds, and only
+      // while the tab is actually being looked at.
+      poll = setInterval(async () => {
+        if (document.visibilityState !== "visible") return;
+
+        const { data } = await supabase
+          .from("messages")
+          .select("id, body, from_staff, created_at")
+          .eq("conversation_id", conversationId)
+          .order("created_at", { ascending: true });
+
+        if (data) merge(data as ThreadMessage[]);
+      }, POLL_MS);
+    }
+
+    start();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (poll) clearInterval(poll);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, merge]);
 
-  // Keep the newest message in view as the thread grows.
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages.length]);
@@ -84,7 +132,7 @@ export function LiveThread({
 
     setError(null);
 
-    // Show it straight away; the socket will hand back the real row.
+    // Show it straight away; the real row replaces it when it arrives.
     const optimistic: ThreadMessage = {
       id: `pending-${Date.now()}`,
       body,
