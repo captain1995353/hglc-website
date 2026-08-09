@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireRole, ROLE_LABELS } from "@/app/actions/admin/guard";
-import { AdminNav } from "@/components/admin/AdminNav";
-import { LogoMark } from "@/components/LogoMark";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { signOut } from "@/app/actions/auth";
 
 export const metadata: Metadata = {
@@ -17,10 +16,6 @@ export const metadata: Metadata = {
  */
 export const dynamic = "force-dynamic";
 
-/**
- * The dashboard is a separate application shell: its own header, its own
- * navigation, no public site chrome. Nothing on the public site links here.
- */
 export default async function AdminLayout({
   children,
 }: {
@@ -48,54 +43,66 @@ export default async function AdminLayout({
     badges["/admin/messages"] = messages.count ?? 0;
   }
 
+  const name = profile.full_name || ROLE_LABELS[role];
+  const initials =
+    name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part: string) => part[0])
+      .join("")
+      .toUpperCase() || "A";
+
   return (
-    <>
-      <header className="sticky top-0 z-50 border-b border-ink-800 bg-ink-900 text-white">
-        <div className="container-page flex h-[60px] items-center justify-between gap-4">
-          <Link href="/admin" className="flex items-center gap-2.5">
-            <LogoMark className="h-8 w-8" onDark />
-            <span className="leading-tight">
-              <span className="block text-sm font-bold uppercase tracking-[0.02em]">
-                Hangeul
-              </span>
-              <span className="block text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-ink-300">
-                {ROLE_LABELS[role]} dashboard
-              </span>
-            </span>
-          </Link>
+    <div className="min-h-screen bg-paper-dim">
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-30 border-b border-ink-100 bg-white/90 backdrop-blur">
+          <div className="flex h-16 items-center justify-between gap-4 px-5 sm:px-8">
+            <div className="flex items-center gap-3">
+              {/* Renders the fixed rail on desktop and the drawer button
+                  here on mobile — `fixed` ignores where it sits in the DOM. */}
+              <AdminSidebar role={role} name={name} badges={badges} />
+              <div className="hidden sm:block">
+                <p className="text-sm font-semibold text-ink-900">
+                  {ROLE_LABELS[role]} dashboard
+                </p>
+                <p className="text-xs text-ink-400">
+                  Hangeul Global Learning Center
+                </p>
+              </div>
+            </div>
 
-          <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-ink-300 sm:inline">
-              {profile.full_name || ROLE_LABELS[role]}
-            </span>
-            <Link
-              href="/"
-              target="_blank"
-              className="text-sm font-medium text-ink-200 hover:text-white"
-            >
-              View site ↗
-            </Link>
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="rounded-lg border border-white/20 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/10"
+            <div className="flex items-center gap-3">
+              <Link
+                href="/"
+                target="_blank"
+                className="hidden text-sm font-medium text-ink-500 hover:text-ink-900 sm:inline"
               >
-                Sign out
-              </button>
-            </form>
+                View site ↗
+              </Link>
+
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-ink-200 px-3 py-1.5 text-sm font-semibold text-ink-700 hover:bg-ink-50"
+                >
+                  Sign out
+                </button>
+              </form>
+
+              <span
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white"
+                title={name}
+              >
+                {initials}
+              </span>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="container-page flex-1 py-8">
-        <div className="grid gap-8 lg:grid-cols-[13rem_1fr] lg:items-start">
-          <aside className="lg:sticky lg:top-[76px]">
-            <AdminNav role={role} badges={badges} />
-          </aside>
-
-          <div className="min-w-0">{children}</div>
-        </div>
+        <main className="px-5 py-8 sm:px-8">
+          <div className="mx-auto max-w-6xl">{children}</div>
+        </main>
       </div>
-    </>
+    </div>
   );
 }
