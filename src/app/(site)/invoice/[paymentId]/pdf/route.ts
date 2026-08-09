@@ -16,7 +16,6 @@ import { loadInvoice, type InvoiceData } from "@/lib/invoice-data";
 const INK = rgb(0.106, 0.145, 0.278);
 const MUTED = rgb(0.46, 0.5, 0.67);
 const LINE = rgb(0.898, 0.91, 0.949);
-const BRAND = rgb(0.255, 0.294, 0.588);
 const CORAL = rgb(0.914, 0.294, 0.31);
 
 function money(amount: number, currency: string) {
@@ -56,6 +55,75 @@ function wrap(
   }
   if (line) lines.push(line);
   return lines;
+}
+
+
+/* Brand tiles — the same four pieces as components/LogoMark.tsx. */
+const TILE_CORAL = rgb(0.914, 0.294, 0.31);
+const TILE_NAVY = rgb(0.141, 0.192, 0.369);
+const TILE_INDIGO = rgb(0.298, 0.341, 0.671);
+const TILE_PLUM = rgb(0.38, 0.325, 0.624);
+
+/**
+ * The HGLC puzzle mark. Paths are the component's, in its 0–100 viewBox;
+ * drawSvgPath reads them with y running downward from the anchor, so the
+ * anchor is the mark's top-left corner.
+ */
+function drawLogo(
+  page: ReturnType<PDFDocument["addPage"]>,
+  x: number,
+  topY: number,
+  size: number,
+  bold: Awaited<ReturnType<PDFDocument["embedFont"]>>,
+) {
+  const k = size / 100;
+  const at = (svgX: number, svgY: number) => ({
+    x: x + svgX * k,
+    y: topY - svgY * k,
+  });
+
+  const tiles: [string, ReturnType<typeof rgb>][] = [
+    ["M8 15a7 7 0 0 1 7-7h34v41H8z", TILE_CORAL],
+    ["M51 8h34a7 7 0 0 1 7 7v34H51z", TILE_NAVY],
+    ["M8 51h41v41H15a7 7 0 0 1-7-7z", TILE_INDIGO],
+    ["M51 51h41v34a7 7 0 0 1-7 7H51z", TILE_PLUM],
+  ];
+
+  for (const [path, color] of tiles) {
+    page.drawSvgPath(path, { x, y: topY, scale: k, color });
+  }
+
+  // Tabs straddling the seams, in the colour of the piece they belong to.
+  const tabs: [number, number, ReturnType<typeof rgb>][] = [
+    [50, 28, TILE_NAVY],
+    [28, 50, TILE_CORAL],
+    [72, 50, TILE_NAVY],
+    [50, 72, TILE_INDIGO],
+  ];
+
+  for (const [cx, cy, color] of tabs) {
+    const p = at(cx, cy);
+    page.drawCircle({ x: p.x, y: p.y, size: 7.5 * k, color });
+  }
+
+  const letterSize = 26 * k;
+  const letters: [string, number, number][] = [
+    ["H", 29, 38],
+    ["G", 71, 38],
+    ["L", 29, 82],
+    ["C", 71, 82],
+  ];
+
+  for (const [glyph, cx, baseline] of letters) {
+    const p = at(cx, baseline);
+    page.drawText(glyph, {
+      x: p.x - bold.widthOfTextAtSize(glyph, letterSize) / 2,
+      y: p.y,
+      size: letterSize,
+      font: bold,
+      color: rgb(1, 1, 1),
+    });
+  }
 }
 
 async function buildPdf(invoice: InvoiceData) {
@@ -100,12 +168,11 @@ async function buildPdf(invoice: InvoiceData) {
   };
 
   // ---- header --------------------------------------------------------
-  page.drawRectangle({ x: left, y: y - 6, width: 30, height: 30, color: BRAND });
-  page.drawText("H", { x: left + 9, y: y + 3, size: 15, font: bold, color: rgb(1, 1, 1) });
+  drawLogo(page, left, y + 26, 38, bold);
 
-  text("HANGEUL", left + 40, 15, bold);
+  text("HANGEUL", left + 48, 15, bold);
   y -= 13;
-  text("GLOBAL LEARNING CENTER", left + 40, 7.5, regular, MUTED);
+  text("GLOBAL LEARNING CENTER", left + 48, 7.5, regular, MUTED);
   y += 13;
 
   rightText(invoice.paid ? "INVOICE" : "PAYMENT RECORD", 9, bold, MUTED);
