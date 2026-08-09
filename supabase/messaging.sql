@@ -13,6 +13,7 @@
 -- name is optional but makes the call less awkward.
 -- ---------------------------------------------------------------------
 alter table public.profiles
+  add column if not exists address text not null default '',
   add column if not exists emergency_name text not null default '',
   add column if not exists emergency_phone text not null default '',
   add column if not exists emergency_relation text not null default '';
@@ -134,12 +135,14 @@ set search_path = public
 as $$
 begin
   insert into public.profiles (
-    id, full_name, phone, emergency_name, emergency_phone, emergency_relation
+    id, full_name, phone, address,
+    emergency_name, emergency_phone, emergency_relation
   )
   values (
     new.id,
     coalesce(new.raw_user_meta_data ->> 'full_name', ''),
     coalesce(new.raw_user_meta_data ->> 'phone', ''),
+    coalesce(new.raw_user_meta_data ->> 'address', ''),
     coalesce(new.raw_user_meta_data ->> 'emergency_name', ''),
     coalesce(new.raw_user_meta_data ->> 'emergency_phone', ''),
     coalesce(new.raw_user_meta_data ->> 'emergency_relation', '')

@@ -23,6 +23,7 @@ export async function updateStudent(form: FormData) {
     .update({
       full_name: str(form, "full_name"),
       phone: str(form, "phone"),
+      address: str(form, "address"),
       emergency_name: str(form, "emergency_name"),
       emergency_phone: str(form, "emergency_phone"),
       emergency_relation: str(form, "emergency_relation"),

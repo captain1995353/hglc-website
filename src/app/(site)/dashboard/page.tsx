@@ -27,7 +27,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, phone, emergency_name, emergency_phone, emergency_relation")
+    .select("full_name, phone, address, emergency_name, emergency_phone, emergency_relation")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -276,6 +276,19 @@ export default async function DashboardPage() {
                 type="tel"
                 defaultValue={profile?.phone ?? ""}
                 className="field-input"
+              />
+            </div>
+
+            <div>
+              <label className="field-label" htmlFor="address">
+                Address
+              </label>
+              <textarea
+                id="address"
+                name="address"
+                rows={2}
+                defaultValue={profile?.address ?? ""}
+                className="field-input resize-y"
               />
             </div>
 

@@ -36,7 +36,7 @@ export default async function ConversationPage({
       .order("created_at", { ascending: true }),
     db
       .from("profiles")
-      .select("full_name, phone, emergency_name, emergency_phone, emergency_relation")
+      .select("full_name, phone, address, emergency_name, emergency_phone, emergency_relation")
       .eq("id", conversation.student_id)
       .maybeSingle(),
   ]);
@@ -120,6 +120,12 @@ export default async function ConversationPage({
             >
               {student.phone}
             </a>
+          )}
+
+          {student?.address && (
+            <p className="mt-3 whitespace-pre-line text-sm text-ink-600">
+              {student.address}
+            </p>
           )}
 
           {student?.emergency_phone && (

@@ -24,6 +24,7 @@ export async function updateProfile(formData: FormData) {
   for (const key of [
     "full_name",
     "phone",
+    "address",
     "emergency_name",
     "emergency_phone",
     "emergency_relation",

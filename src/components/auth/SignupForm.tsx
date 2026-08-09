@@ -19,6 +19,7 @@ export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
     full_name: "",
     email: "",
     phone: "",
+    address: "",
     password: "",
     emergency_name: "",
     emergency_phone: "",
@@ -47,6 +48,7 @@ export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
         data: {
           full_name: form.full_name.trim(),
           phone: form.phone.trim(),
+          address: form.address.trim(),
           emergency_name: form.emergency_name.trim(),
           emergency_phone: form.emergency_phone.trim(),
           emergency_relation: form.emergency_relation.trim(),
@@ -203,6 +205,21 @@ export function SignupForm({ t, next }: { t: Dictionary; next: string }) {
           className="field-input"
           value={form.phone}
           onChange={update("phone")}
+        />
+      </div>
+
+      <div>
+        <label className="field-label" htmlFor="address">
+          Address
+        </label>
+        <textarea
+          id="address"
+          rows={2}
+          autoComplete="street-address"
+          placeholder="House, road, area, city"
+          className="field-input resize-y"
+          value={form.address}
+          onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
         />
       </div>
 
