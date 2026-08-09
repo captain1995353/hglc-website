@@ -6,6 +6,16 @@ import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/LogoMark";
 import type { Role } from "@/app/actions/admin/guard";
 
+/**
+ * The dashboard frame: fixed rail, top bar, content well.
+ *
+ * Rail and toggle live in one component because they share the drawer state,
+ * and — the reason this is not two components — the rail must not be nested
+ * inside the header. The header uses backdrop-blur, and a backdrop-filter
+ * makes an element the containing block for its fixed-position descendants,
+ * which clips the rail into the header's own 64px box.
+ */
+
 type NavItem = {
   href: string;
   label: string;
@@ -14,7 +24,6 @@ type NavItem = {
   exact?: boolean;
 };
 
-/* Line icons at 18px, stroke 1.6 — quiet enough to sit under the labels. */
 const icon = (path: React.ReactNode) => (
   <svg
     width="18"
@@ -75,7 +84,6 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
             <circle cx="9" cy="8" r="3.2" />
             <path d="M3.5 19a5.5 5.5 0 0 1 11 0" />
             <path d="M16 8.5a3 3 0 0 1 0 5" />
-            <path d="M17.5 19a4.5 4.5 0 0 0-2-3.6" />
           </>,
         ),
       },
@@ -158,7 +166,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
         icon: icon(
           <>
             <circle cx="12" cy="12" r="3" />
-            <path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1 2 2 0 1 1-4 0 1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 15a2 2 0 1 1 0-4 1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9 4.6a2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.6 1.6 0 0 0 19.4 11a2 2 0 1 1 0 4z" />
+            <path d="M20 12a8 8 0 0 0-.14-1.5l2-1.55-2-3.46-2.36.95a8 8 0 0 0-2.6-1.5L14.5 2h-4l-.4 2.94a8 8 0 0 0-2.6 1.5L5.14 5.5l-2 3.46 2 1.55A8 8 0 0 0 5 12a8 8 0 0 0 .14 1.5l-2 1.55 2 3.46 2.36-.95a8 8 0 0 0 2.6 1.5l.4 2.94h4l.4-2.94a8 8 0 0 0 2.6-1.5l2.36.95 2-3.46-2-1.55A8 8 0 0 0 20 12z" />
           </>,
         ),
       },
@@ -166,27 +174,49 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   },
 ];
 
-export function AdminSidebar({
+export function AdminChrome({
   role,
+  roleLabel,
   name,
   badges,
+  signOut,
+  children,
 }: {
   role: Role;
+  roleLabel: string;
   name: string;
   badges: Record<string, number>;
+  /** The sign-out form, rendered on the server so the action stays server-side. */
+  signOut: React.ReactNode;
+  children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   useEffect(() => setOpen(false), [pathname]);
 
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   const sections = SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter((item) => item.roles.includes(role)),
   })).filter((section) => section.items.length > 0);
 
-  const nav = (
-    <>
+  const initials =
+    name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part: string) => part[0])
+      .join("")
+      .toUpperCase() || "A";
+
+  const rail = (
+    <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 px-5 py-5">
         <LogoMark className="h-9 w-9" onDark />
         <span className="leading-none">
@@ -194,12 +224,12 @@ export function AdminSidebar({
             Hangeul
           </span>
           <span className="mt-1 block text-[0.55rem] font-semibold uppercase tracking-[0.16em] text-ink-400">
-            {role} panel
+            {roleLabel} panel
           </span>
         </span>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 pb-6">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
         {sections.map((section) => (
           <div key={section.title} className="mb-5">
             <p className="mb-2 px-2 text-[0.6rem] font-bold uppercase tracking-[0.18em] text-ink-500">
@@ -219,7 +249,7 @@ export function AdminSidebar({
                       aria-current={active ? "page" : undefined}
                       className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
                         active
-                          ? "bg-brand-600 text-white shadow-[0_6px_16px_-6px_rgba(76,87,171,0.9)]"
+                          ? "bg-brand-600 text-white"
                           : "text-ink-300 hover:bg-white/5 hover:text-white"
                       }`}
                     >
@@ -241,37 +271,21 @@ export function AdminSidebar({
         ))}
       </nav>
 
-      <div className="border-t border-white/10 px-5 py-4">
+      <div className="shrink-0 border-t border-white/10 px-5 py-4">
         <p className="text-xs text-ink-500">Signed in as</p>
         <p className="truncate text-sm font-semibold text-white">{name}</p>
       </div>
-    </>
+    </div>
   );
 
   return (
-    <>
-      {/* Desktop: a fixed rail the content is inset against. */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col bg-ink-900 lg:flex">
-        {nav}
+    <div className="min-h-screen bg-paper-dim">
+      {/* Desktop rail — a direct child of the page, never inside the header. */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 bg-ink-900 lg:block">
+        {rail}
       </aside>
 
-      {/* Mobile: the same rail, as a drawer. */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Open menu"
-        className="grid h-10 w-10 place-items-center rounded-lg border border-ink-200 bg-white text-ink-700 lg:hidden"
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path
-            d="M3 6h18M3 12h18M3 18h18"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-      </button>
-
+      {/* Mobile drawer */}
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
@@ -280,11 +294,63 @@ export function AdminSidebar({
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-ink-950/60"
           />
-          <div className="absolute inset-y-0 left-0 flex w-64 flex-col bg-ink-900">
-            {nav}
-          </div>
+          <div className="absolute inset-y-0 left-0 w-64 bg-ink-900">{rail}</div>
         </div>
       )}
-    </>
+
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-30 border-b border-ink-100 bg-white">
+          <div className="flex h-16 items-center justify-between gap-4 px-5 sm:px-8">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                aria-label="Open menu"
+                className="grid h-10 w-10 place-items-center rounded-lg border border-ink-200 text-ink-700 lg:hidden"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M3 6h18M3 12h18M3 18h18"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+
+              <div>
+                <p className="text-sm font-semibold text-ink-900">
+                  {roleLabel} dashboard
+                </p>
+                <p className="hidden text-xs text-ink-400 sm:block">
+                  Hangeul Global Learning Center
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Link
+                href="/"
+                target="_blank"
+                className="hidden text-sm font-medium text-ink-500 hover:text-ink-900 sm:inline"
+              >
+                View site ↗
+              </Link>
+              {signOut}
+              <span
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-600 text-sm font-bold text-white"
+                title={name}
+              >
+                {initials}
+              </span>
+            </div>
+          </div>
+        </header>
+
+        <main className="px-5 py-8 sm:px-8">
+          <div className="mx-auto max-w-6xl">{children}</div>
+        </main>
+      </div>
+    </div>
   );
 }
