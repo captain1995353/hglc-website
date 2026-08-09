@@ -63,14 +63,25 @@ export function ManualPaymentForm({
   enrollmentId,
   amountDue,
   submitLabel,
+  available,
 }: {
   enrollmentId: string;
   /** The course fee, prefilled so most students just leave it alone. */
   amountDue: number;
   submitLabel: string;
+  /**
+   * Which methods the centre can actually receive money through. A method
+   * with no account behind it is not offered: asking a student for a bKash
+   * transaction ID when no bKash number is published leaves them stuck with
+   * a form they cannot complete.
+   */
+  available: Channel[];
 }) {
-  const [channel, setChannel] = useState<Channel>("bkash");
-  const active = CHANNELS.find((c) => c.value === channel)!;
+  const options = CHANNELS.filter((c) => available.includes(c.value));
+  const [channel, setChannel] = useState<Channel>(options[0]?.value ?? "cash");
+  const active = options.find((c) => c.value === channel) ?? options[0];
+
+  if (!active) return null;
 
   return (
     <form
@@ -82,8 +93,12 @@ export function ManualPaymentForm({
 
       <div className="sm:col-span-2">
         <span className="field-label">How did you pay?</span>
-        <div className="grid gap-2 sm:grid-cols-4">
-          {CHANNELS.map((option) => (
+        <div
+          className={`grid gap-2 ${
+            options.length > 2 ? "sm:grid-cols-4" : "sm:grid-cols-2"
+          }`}
+        >
+          {options.map((option) => (
             <label key={option.value} className="cursor-pointer">
               <input
                 type="radio"

@@ -90,6 +90,14 @@ export default async function CheckoutPage({
   };
   const paymentNote = setting(settings, "payment_note", locale, t.checkout.manualBody);
   const hasAccounts = Boolean(accounts.bkash || accounts.nagad || accounts.bank);
+
+  // Cash needs no account details; the rest need somewhere to send money.
+  const availableChannels = [
+    ...(accounts.bkash ? (["bkash"] as const) : []),
+    ...(accounts.nagad ? (["nagad"] as const) : []),
+    ...(accounts.bank ? (["bank"] as const) : []),
+    "cash" as const,
+  ];
   const address = setting(settings, "address", locale, site.address[locale]);
   const openingHours = setting(settings, "opening_hours", locale, site.hours[locale]);
 
@@ -254,6 +262,7 @@ export default async function CheckoutPage({
                     enrollmentId={id}
                     amountDue={priceBdt}
                     submitLabel={t.checkout.manualSubmit}
+                    available={[...availableChannels]}
                   />
                 </section>
               </div>
